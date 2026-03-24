@@ -55,6 +55,11 @@
     .btn-contact-line:hover { background: #faf5f0; color: #4A3C49; text-decoration: none;}
 
     .card-order { background: var(--brand-white); border-radius: 16px; border: 1px solid #e0d8d0; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(44,44,47,0.03); overflow: hidden; text-align: left; }
+    /* 🌟 新增：預購卡片特殊樣式 */
+    .card-order.preorder-card { border: 2px solid #a95a52; box-shadow: 0 4px 16px rgba(169, 90, 82, 0.15); }
+    .card-order.preorder-card .order-header { background-color: #fdf3f2; }
+    .card-order.preorder-card .order-header:hover { background-color: #fae8e6; }
+    
     .order-header { background-color: #fbfaf9; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; gap: 15px; }
     .order-header:hover { background-color: #f6f0ea; }
     .order-title-container { display: block; flex: 1; min-width: 0; }
@@ -63,6 +68,8 @@
     
     .badge-status { background-color: #fdf3f2; color: #a95a52; border: 1px solid #fdf3f2; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; letter-spacing: 1px; flex-shrink: 0; }
     .status-done { background-color: #eef5ee; color: #436b46; border-color: #eef5ee; }
+    /* 🌟 新增：許願候補專用 Badge */
+    .status-waitlist { background-color: #fff8e6; color: #d39e00; border-color: #fff8e6; }
     
     .order-content { display: none; border-top: 1px dashed #e0d8d0; padding-top: 15px; animation: fadeIn 0.3s ease-in-out; }
     .order-content.show { display: block; }
@@ -94,6 +101,14 @@
     .item-row:first-child { padding-top: 0; }
     .item-name { font-weight: 700; line-height: 1.4; }
     .item-qty { color: #888; margin-left: 8px; font-size: 12px; font-weight: 600; }
+    
+    /* 🌟 新增：預購品項狀態顯示 */
+    .preorder-status { font-size: 12px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
+    .status-get { background-color: #eef5ee; color: #436b46; }
+    .status-miss { background-color: #fdf3f2; color: #a95a52; }
+    .item-row.is-missing { opacity: 0.7; }
+    .item-row.is-missing .item-name { text-decoration: line-through; }
+    
     .summary-divider { height: 1px; border-top: 1px dashed #e0d8d0; margin: 15px 0; }
     .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: #666; font-weight: 500; }
     .last5-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 14px; color: #666; font-weight: 600; }
@@ -215,10 +230,21 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   
   <script>
+    // 🌟 請換上你全新的測試版 API 網址與 LIFF ID
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxfxxGPMS9zwfBAXL86dyLf8vd5dzEx8u7GHTj5g6YYfZ4dZeilov35ZN9uEYQrZ1UJHA/exec"; 
     const LIFF_ID = "2009208139-8evwKUxz"; 
 
     let currentLineUid = "";
+
+    // 🌟 修正 1：將切換分頁函數移到全域，避免手機版找不到
+    window.switchFrontTab = function(tabId, btnEl) {
+        document.querySelectorAll('#innerSimTabs .nav-link').forEach(b => b.classList.remove('active'));
+        btnEl.classList.add('active');
+        document.querySelectorAll('#innerSimTabsContent .tab-pane').forEach(p => {
+            p.classList.remove('show', 'active');
+        });
+        document.getElementById(tabId).classList.add('show', 'active');
+    };
 
     window.onload = async function() {
         try {
@@ -229,20 +255,16 @@
                 const profile = await liff.getProfile(); 
                 currentLineUid = profile.userId;
                 
-                // 📡 啟動隱形掃描雷達：檢查是否為官方帳號好友
                 try {
                     const friend = await liff.getFriendship();
                     if (!friend.friendFlag) {
-                        // ❌ 不是好友 (或封鎖中)：攔截並顯示溫馨提醒視窗
                         document.getElementById('loadingArea').style.display = 'none';
                         const friendModal = new bootstrap.Modal(document.getElementById('friendshipModal'));
                         friendModal.show();
                     } else {
-                        // ✅ 是好友：順利放行，繼續執行登入與查單流程
                         checkMemberStatus(); 
                     }
                 } catch(e) {
-                    // 如果雷達發生錯誤(例如後台沒綁定Linked OA)，為了不卡住客人，直接放行
                     checkMemberStatus();
                 }
             }
@@ -252,7 +274,6 @@
         }
     };
 
-    // 👆 客人點擊「稍後再說 (跳過)」的觸發動作
     window.skipFriendship = function() {
         let modalEl = document.getElementById('friendshipModal');
         let modalObj = bootstrap.Modal.getInstance(modalEl);
@@ -262,25 +283,18 @@
         checkMemberStatus(); 
     };
 
-    // 👆 第一階段：客人點擊「點我加入官方 LINE」
     window.openLineAddFriend = function() {
-        // 1. 抓取整個「白色視窗本體」
         let modalContent = document.querySelector('#friendshipModal .modal-content');
-        
-        // 2. 賦予它 0.3 秒的漸變能力，並立刻讓它「變透明 (淡出)」
         modalContent.style.transition = 'opacity 0.3s ease-in-out';
         modalContent.style.opacity = '0';
         
-        // 3. 同時呼叫 LINE 加好友面板 (面板開始往上滑)
         try {
             liff.openWindow({ url: 'https://lin.ee/mty4uxj', external: false });
         } catch(e) {
             window.open('https://lin.ee/mty4uxj', '_blank');
         }
         
-        // 4. 第一個定時器：等 300 毫秒 (此時視窗已經完全隱形，沒人看得到)
         setTimeout(() => {
-            // 在隱形狀態下，偷偷把按鈕從第一階段換成第二階段
             let step1 = document.getElementById('step1-buttons');
             let step2 = document.getElementById('step2-buttons');
             
@@ -290,34 +304,20 @@
             step2.classList.remove('d-none');
             step2.classList.add('d-flex');
             
-            // 5. 第二個定時器：再等 500 毫秒 (此時 LINE 面板已經 100% 蓋住手機畫面了)
             setTimeout(() => {
-                // 下令已經換裝完畢的視窗「淡入浮現」，準備迎接客人關閉面板
                 modalContent.style.opacity = '1';
             }, 500);
             
         }, 300);
     };
 
-    // 👆 第二階段：客人關閉面板後，點擊「我已經加好友了」
     window.confirmFriendshipAdded = function() {
-        // 1. 隱藏 Modal
         let modalEl = document.getElementById('friendshipModal');
         let modalObj = bootstrap.Modal.getInstance(modalEl);
         if(modalObj) modalObj.hide();
         
-        // 2. 顯示載入動畫，直接去後台抓資料，保證不卡死！
         document.getElementById('loadingArea').style.display = 'block';
         checkMemberStatus();
-    };
-
-    window.switchFrontTab = function(tabId, btnEl) {
-        document.querySelectorAll('#innerSimTabs .nav-link').forEach(b => b.classList.remove('active'));
-        btnEl.classList.add('active');
-        document.querySelectorAll('#innerSimTabsContent .tab-pane').forEach(p => {
-            p.classList.remove('show', 'active');
-        });
-        document.getElementById(tabId).classList.add('show', 'active');
     };
 
     async function checkMemberStatus() {
@@ -367,15 +367,11 @@
           const res = await fetch(GAS_WEB_APP_URL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ action: 'bindUser', lineUid: currentLineUid, phone: phone, email: email, name: name }) });
           const data = await res.json();
           if(data.status === "SUCCESS") {
-             // 1. 隱藏綁定視窗
              document.getElementById('bindArea').style.display = 'none'; 
-             
-             // 2. 🌟 關鍵修正：顯示載入動畫，不要給客人看空白畫面
              document.getElementById('loadingArea').style.display = 'block';
              let loadingText = document.querySelector('#loadingArea p');
              if(loadingText) loadingText.innerText = "✅ 綁定成功！正在為您調閱專屬訂單...";
              
-             // 3. 🌟 關鍵修正：強制等待 1.5 秒，讓 Airtable 建立好資料庫索引後，再去撈資料
              setTimeout(() => {
                  checkMemberStatus(); 
              }, 1500);
@@ -507,10 +503,15 @@
             titleHtmlStr = `<h6 class="fw-bold mb-3 ms-1" style="color: #a95a52;"><i class="bi bi-person-lines-fill me-2"></i>客戶：${window.lastAdminSearchText}</h6>`;
         }
         
+        // 🌟 修正 2：為未來的預購跟許願池預留 HTML 變數，目前先讓它們是空的
+        let officialOrdersHtml = '';
+        let preorderOrdersHtml = '';
+        let waitlistHtml = '';
+        
         if (!orders || orders.length === 0) { 
-            ordersHtml = `<div class="p-5 rounded border border-2 border-theme-secondary border-dashed bg-white shadow-sm text-center"><h6 class="fw-bold m-0" style="color: #888;">📦 您目前沒有進行中的訂單</h6></div>`; 
+            officialOrdersHtml = `<div class="p-5 rounded border border-2 border-theme-secondary border-dashed bg-white shadow-sm text-center"><h6 class="fw-bold m-0" style="color: #888;">📦 您目前沒有進行中的訂單</h6></div>`; 
         } else {
-            let cardsHtml = orders.map((order, idx) => {
+            officialOrdersHtml = orders.map((order, idx) => {
                 let collapseId = `order-collapse-${idx}`; 
                 let progressCollapseId = `progress-collapse-${idx}`; 
                 
@@ -672,8 +673,9 @@
                     </div>
                 </div>`;
             }).join('');
-
-            ordersHtml = `<div class="text-start">${titleHtmlStr}${cardsHtml}</div>`;
+            
+            // 將未來的預購跟許願池放在正式訂單的上方
+            ordersHtml = `<div class="text-start">${titleHtmlStr}${preorderOrdersHtml}${waitlistHtml}${cardsHtml}</div>`;
         }
 
         let instockArr = globalPages.instock;
