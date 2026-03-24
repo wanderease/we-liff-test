@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>Wander Ease 會員中心</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  
+  <style>
+    :root {
+      --brand-bg: #efe8df;       
+      --brand-charcoal: #2c2c2f; 
+      --brand-brown: #795238;    
+      --brand-brown-hover: #5e3f2b; 
+      --brand-white: #ffffff;    
+      
+      --track-bg: #e0d8d0;
+      --track-active: #795238; 
+      --track-final: #2c2c2f;
+      --track-muted: #b8b0a8;
+    }
+
+    body { background-color: var(--brand-bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: var(--brand-charcoal); padding-bottom: 50px; }
+    
+    .header-img { width: 100%; height: 160px; background: var(--brand-charcoal); color: var(--brand-white); display: flex; align-items: center; justify-content: center; flex-direction: column; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .header-img-mini { height: 100px; border-radius: 0 0 20px 20px; }
+    
+    .card-custom { border: none; border-radius: 16px; box-shadow: 0 8px 24px rgba(44,44,47,0.06); background: var(--brand-white); padding: 24px; position: relative; }
+    .overlap-top { margin-top: -30px; } 
+    
+    .btn-brand { background-color: var(--brand-brown); color: var(--brand-white); border-radius: 12px; padding: 14px; font-weight: 600; font-size: 16px; border: none; width: 100%; transition: 0.2s; }
+    .btn-brand:hover, .btn-brand:active { background-color: var(--brand-brown-hover); color: var(--brand-white); }
+    .btn-outline-brand { border: 1.5px solid var(--brand-brown); color: var(--brand-brown); border-radius: 12px; padding: 12px; font-weight: 600; width: 100%; background: transparent; transition: 0.2s; }
+    .btn-outline-brand:hover, .btn-outline-brand:active { background-color: var(--brand-brown); color: var(--brand-white); }
+    
+    .form-label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+    .form-control { border-radius: 10px; padding: 14px 16px; border: 1.5px solid #e0d8d0; background-color: #fbfaf9; font-size: 15px; width: 100%; }
+    .form-control:focus { border-color: var(--brand-brown); box-shadow: 0 0 0 3px rgba(121,82,56,0.15); background-color: var(--brand-white); }
+    
+    .loader-overlay { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 0; text-align: center; }
+    .spinner-border { color: var(--brand-brown); }
+    .text-carousel { font-size: 14px; font-weight: bold; color: var(--brand-charcoal); margin-top: 15px; min-height: 20px; }
+    .progress-bar-custom { width: 80%; max-width: 250px; height: 6px; background-color: #e0d8d0; border-radius: 10px; margin: 15px auto 0; overflow: hidden; position: relative; }
+    .progress-bar-fill { height: 100%; background-color: var(--brand-brown); width: 0%; transition: width 0.5s ease; animation: loadBar 2s infinite ease-in-out; }
+    @keyframes loadBar { 0% { width: 10%; transform: translateX(-10%); } 50% { width: 50%; transform: translateX(50%); } 100% { width: 10%; transform: translateX(110%); } }
+
+    @media (min-width: 768px) { #ordersContainer, #adminArea { max-width: 600px; margin: 0 auto; } }
+
+    .sim-nav-pills { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; background: transparent; border: none; padding: 0; }
+    .sim-nav-pills .nav-link { border-radius: 12px; font-weight: 800; font-size: 14px; padding: 12px 5px; color: #7a6c5d; border: 1.5px solid #e8d5c4; background: #fff; text-align: center; transition: 0.2s; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.02); margin: 0; width: 100%;}
+    .sim-nav-pills .nav-link.active { background: #e8d5c4; color: #4A3C49; border-color: #e8d5c4; box-shadow: inset 0 0 0 1px #e8d5c4; }
+    
+    .btn-contact-line { display: block; width: 100%; background-color: #fff; border: 1.5px solid #e8d5c4; color: #7a6c5d; border-radius: 12px; padding: 12px; font-weight: 800; font-size: 14px; text-align: center; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: 0.2s; cursor: pointer;}
+    .btn-contact-line:hover { background: #faf5f0; color: #4A3C49; text-decoration: none;}
+
+    .card-order { background: var(--brand-white); border-radius: 16px; border: 1px solid #e0d8d0; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(44,44,47,0.03); overflow: hidden; text-align: left; }
+    .order-header { background-color: #fbfaf9; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; gap: 15px; }
+    .order-header:hover { background-color: #f6f0ea; }
+    .order-title-container { display: block; flex: 1; min-width: 0; }
+    .order-title-brand { display: block; font-weight: 900; color: var(--brand-charcoal); font-size: 1.15rem; line-height: 1.3; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+    .order-title-series { display: block; font-weight: 600; color: #666; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+    
+    .badge-status { background-color: #fdf3f2; color: #a95a52; border: 1px solid #fdf3f2; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; letter-spacing: 1px; flex-shrink: 0; }
+    .status-done { background-color: #eef5ee; color: #436b46; border-color: #eef5ee; }
+    
+    .order-content { display: none; border-top: 1px dashed #e0d8d0; padding-top: 15px; animation: fadeIn 0.3s ease-in-out; }
+    .order-content.show { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .notice-box { background-color: #FFF3CD; border-left: 4px solid #856404; padding: 15px; margin: 0 20px 20px 20px; border-radius: 6px; font-size: 14px; color: #856404; font-weight: bold; line-height: 1.6; text-align: left; }
+    .progress-toggle-btn { background-color: #fbfaf9; border: 1px dashed #e0d8d0; color: var(--brand-charcoal); padding: 12px; text-align: center; font-weight: 700; font-size: 14px; border-radius: 8px; margin: 0 20px 20px 20px; cursor: pointer; transition: 0.2s; }
+    .progress-toggle-btn:hover { background-color: #f6f0ea; }
+    .progress-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+    .progress-content.show { display: block; }
+
+    .progress-wrapper { margin: 0 20px 20px 20px; padding: 20px 15px; border: 1px solid #e0d8d0; border-radius: 12px; background-color: var(--brand-white); }
+    .progress-title { font-size: 14px; font-weight: 800; color: var(--brand-charcoal); margin-bottom: 5px; display: flex; align-items: center; justify-content: space-between; }
+    .tracker-container { position: relative; display: flex; justify-content: space-between; align-items: flex-start; padding: 0 10px; margin-top: 15px; }
+    .tracker-line { position: absolute; top: 15px; left: 30px; right: 30px; height: 3px; background-color: var(--track-bg); z-index: 0; }
+    .tracker-step { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; flex: 1; }
+    .step-dot { width: 32px; height: 32px; border-radius: 50%; background-color: var(--brand-white); border: 3px solid var(--track-muted); display: flex; justify-content: center; align-items: center; box-shadow: 0 0 0 4px var(--brand-white); margin-bottom: 8px; transition: 0.3s; }
+    .step-dot.active { background-color: var(--track-active); border-color: var(--track-active); }
+    .step-dot.final { border-color: var(--track-final); }
+    .step-dot.final.active { background-color: var(--track-final); }
+    .step-label { font-size: 12px; font-weight: bold; color: var(--track-active); text-align: center; margin-bottom: 4px; white-space: nowrap; }
+    .step-label.muted { color: var(--track-muted); }
+    .step-label.final { color: var(--track-final); }
+    .step-pct { font-size: 16px; font-weight: 900; color: var(--brand-charcoal); }
+    .step-pct.muted { color: var(--track-muted); }
+
+    .details-box { background-color: #fbfaf9; border: 1px solid #e0d8d0; border-radius: 12px; margin: 0 20px 20px 20px; padding: 15px 20px; }
+    .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #e0d8d0; font-size: 14.5px; color: var(--brand-charcoal); }
+    .item-row:first-child { padding-top: 0; }
+    .item-name { font-weight: 700; line-height: 1.4; }
+    .item-qty { color: #888; margin-left: 8px; font-size: 12px; font-weight: 600; }
+    .summary-divider { height: 1px; border-top: 1px dashed #e0d8d0; margin: 15px 0; }
+    .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: #666; font-weight: 500; }
+    .last5-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 14px; color: #666; font-weight: 600; }
+    .last5-value { color: var(--brand-charcoal); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .edit-btn { cursor: pointer; color: var(--brand-brown); font-size: 13px; font-weight: 700; padding: 4px 8px; background-color: #f6f0ea; border-radius: 4px; transition: 0.2s; border: 1px solid #e0d8d0; z-index: 10; position: relative;}
+    .edit-btn:hover { background-color: var(--brand-brown); color: var(--brand-white); border-color: var(--brand-brown); }
+
+    .total-row { display: flex; justify-content: space-between; padding-top: 15px; border-top: 2px solid #e0d8d0; font-size: 1.15rem; font-weight: 900; color: var(--brand-charcoal); }
+    .total-price { color: #dc3545; }
+    
+    .bank-info { background-color: #fbfaf9; border: 1px solid #e0d8d0; padding: 20px; margin: 0 20px 20px 20px; border-radius: 12px; text-align: left; }
+    .bank-title { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 12px; }
+    .bank-title-text { font-size: 14px; color: var(--brand-charcoal); font-weight: 900; display: flex; align-items: center; }
+    .bank-deadline { font-size: 13px; font-weight: 800; color: #dc3545; }
+    .bank-text { font-family: monospace; font-size: 15px; font-weight: bold; color: var(--brand-charcoal); white-space: pre-wrap; line-height: 1.6; }
+    .bank-warning { font-size: 13px; font-weight: bold; color: #a95a52; margin-top: 12px; }
+    .done-note { margin-top: 10px; font-size: 13.5px; font-weight: 700; color: var(--brand-brown); background-color: #f6f0ea; padding: 8px 12px; border-radius: 8px; display: inline-block; }
+  </style>
+</head>
+<body>
+
+  <div id="maintenanceArea" style="display:none; text-align: center; padding: 80px 20px; background-color: var(--brand-bg); height: 100vh;">
+    <div style="margin-bottom: 25px;">
+        <img src="https://drive.google.com/thumbnail?id=1K8G2I1a-8umj8thU1LXOhbO6HVYpYwk6&sz=w800" style="max-width: 160px; height: auto;" alt="Wander Ease Logo">
+    </div>
+    <h3 class="fw-bold mb-4" style="color: var(--brand-brown); letter-spacing: 2px;">系統升級維護中</h3>
+    <div class="card-custom mx-auto" style="max-width: 400px; background-color: var(--brand-white);">
+        <p id="maintenanceMsg" class="fw-bold mb-0" style="color: var(--brand-brown); line-height: 1.8; font-size: 16px;"></p>
+    </div>
+  </div>
+
+  <div id="loadingArea" style="display:block;">
+    <div class="header-img header-img-mini"><h4 class="fw-bold m-0" style="letter-spacing: 1px;">Wander Ease</h4></div>
+    <div class="loader-overlay mt-5">
+        <div class="spinner-border mb-3" role="status"></div>
+        <p class="small text-muted fw-bold">🔒 安全驗證中，為您打造專屬空間...</p>
+    </div>
+  </div>
+
+  <div class="modal fade" id="friendshipModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered px-3">
+      <div class="modal-content shadow-lg border-0" style="border-radius: 20px; background-color: #fbfaf9;">
+        <div class="modal-body p-4 text-center">
+          <div class="mb-3">
+            <i class="bi bi-bell-fill" style="font-size: 3rem; color: var(--brand-brown);"></i>
+          </div>
+          <h4 class="fw-bold mb-3" style="color: var(--brand-charcoal); letter-spacing: 1px;">專屬通知小提醒</h4>
+          <p class="text-muted fw-bold" style="line-height: 1.7; font-size: 14.5px;">
+            為了讓您能第一時間收到「預購是否買到」與「匯款/下單」等專屬通知訊息，建議您先將 Wander Ease 官方帳號加入好友哦~<br><br>
+            <span style="color: #a95a52; background-color: #fdf3f2; padding: 4px 8px; border-radius: 6px;">※ 若未加入好友，將無法接收系統訊息 ※</span>
+          </p>
+          
+          <div id="step1-buttons" class="d-flex flex-column gap-3 mt-4 pt-2">
+            <button type="button" class="btn-brand" onclick="openLineAddFriend()" style="padding: 16px; font-size: 16px; box-shadow: 0 4px 12px rgba(121,82,56,0.2);">
+              👉 點我加入官方 LINE
+            </button>
+            <button type="button" class="btn-outline-brand" onclick="skipFriendship()" style="border: none; color: #888; background: transparent;">
+              稍後再說，先去查單系統
+            </button>
+          </div>
+
+          <div id="step2-buttons" class="d-none flex-column gap-3 mt-4 pt-2">
+            <button type="button" class="btn btn-success fw-bold" onclick="confirmFriendshipAdded()" style="padding: 16px; font-size: 16px; border-radius: 12px; box-shadow: 0 4px 12px rgba(25,135,84,0.2); background-color: #198754; color: white; border: none;">
+              ✅ 我已經加好友了，進入系統
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bindArea" style="display:none;">
+    <div class="header-img"><h2 class="fw-bold m-0 tracking-wide" style="letter-spacing: 1px;">Wander Ease</h2><p class="small mt-2 mb-0" style="color: #d1c8c1;">會員中心</p></div>
+    <div class="container">
+      <div class="card card-custom overlap-top">
+        <h5 class="fw-bold mb-3 text-center">👋 歡迎加入！初次綁定</h5>
+        <div class="text-danger fw-bold mb-3 text-center" style="font-size: 0.9rem;">
+            <i class="bi bi-exclamation-circle-fill me-1"></i> 手機號碼與 Email 很重要，慢慢輸入不要急~
+        </div>
+        <div class="mb-3"><label class="form-label">📱 完整的手機號碼 <span class="text-danger fw-bold">*</span></label><input type="tel" id="bindPhone" class="form-control" placeholder="例如：0912345678"></div>
+        <div class="mb-3"><label class="form-label">✉️ 填單時使用的 Email <span class="text-danger fw-bold">*</span></label><input type="email" id="bindEmail" class="form-control" placeholder="例如：your@email.com"></div>
+        <div class="mb-4"><label class="form-label">👤 社群名稱 <span class="text-danger fw-bold">*</span></label><input type="text" id="bindName" class="form-control" placeholder='您在群組裡的名稱'></div>
+        <button id="btnBind" class="btn-brand" onclick="executeBind()">確認綁定</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="homeArea" style="display:none;">
+    <div class="header-img header-img-mini"><h4 class="fw-bold m-0" style="letter-spacing: 1px;">Wander Ease</h4></div>
+    <div class="container pt-4">
+      <div class="text-center mb-4"><h5 class="fw-bold" id="welcomeMsg" style="color: var(--brand-charcoal);"></h5><p class="small mt-2" style="color: #888;">歡迎來到您的專屬空間</p></div>
+      
+      <div id="adminMaintenanceAlert" style="display: none; max-width: 600px; margin: 0 auto;">
+          <div class="alert alert-danger fw-bold text-center mb-3 shadow-sm" style="border-radius: 12px; border: 2px solid #dc3545;">
+              <i class="bi bi-tools me-2"></i>🚨 目前系統為維修模式，僅管理員可見此畫面
+          </div>
+      </div>
+
+      <div id="adminArea" style="display:none;" class="mb-4">
+          <div class="card card-custom p-4" style="border: 2px solid var(--brand-brown); background-color: #fffaf5;">
+              <h6 class="fw-bold mb-3" style="color: var(--brand-brown);"><i class="bi bi-search me-2"></i>查詢客戶訂單</h6>
+              <div class="input-group mb-2 shadow-sm" style="border-radius: 10px; overflow: hidden;">
+                  <select id="adminSearchType" class="form-select bg-light fw-bold" style="max-width: 130px; border: 1px solid var(--brand-brown); color: #555;">
+                      <option value="name">社群名稱</option>
+                      <option value="phone">手機號碼</option>
+                      <option value="email">Email</option>
+                  </select>
+                  <input type="text" id="adminSearchKeyword" class="form-control fw-bold" style="border: 1px solid var(--brand-brown);" placeholder="請輸入關鍵字...">
+              </div>
+              <button class="btn-brand mt-2" onclick="executeAdminSearch()"><i class="bi bi-file-earmark-text me-1"></i> 調閱客人的單</button>
+          </div>
+      </div>
+
+      <div id="ordersContainer"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  
+  <script>
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx6qs-OtcuH44JOBLUI6sslHWRvNWqm7acUUTLDmdSy7_CuFCcTNrxelbUNBSR5FDMzNQ/exec"; 
+    const LIFF_ID = "2009208139-8lZaYbbd"; 
+
+    let currentLineUid = "";
+
+    window.onload = async function() {
+        try {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) { 
+                liff.login(); 
+            } else {
+                const profile = await liff.getProfile(); 
+                currentLineUid = profile.userId;
+                
+                // 📡 啟動隱形掃描雷達：檢查是否為官方帳號好友
+                try {
+                    const friend = await liff.getFriendship();
+                    if (!friend.friendFlag) {
+                        // ❌ 不是好友 (或封鎖中)：攔截並顯示溫馨提醒視窗
+                        document.getElementById('loadingArea').style.display = 'none';
+                        const friendModal = new bootstrap.Modal(document.getElementById('friendshipModal'));
+                        friendModal.show();
+                    } else {
+                        // ✅ 是好友：順利放行，繼續執行登入與查單流程
+                        checkMemberStatus(); 
+                    }
+                } catch(e) {
+                    // 如果雷達發生錯誤(例如後台沒綁定Linked OA)，為了不卡住客人，直接放行
+                    checkMemberStatus();
+                }
+            }
+        } catch (err) { 
+            alert("LINE 登入失敗，請確認在 LINE 內部開啟。"); 
+            document.getElementById('loadingArea').style.display = 'none'; 
+        }
+    };
+
+    // 👆 客人點擊「稍後再說 (跳過)」的觸發動作
+    window.skipFriendship = function() {
+        let modalEl = document.getElementById('friendshipModal');
+        let modalObj = bootstrap.Modal.getInstance(modalEl);
+        if(modalObj) modalObj.hide();
+        
+        document.getElementById('loadingArea').style.display = 'block'; 
+        checkMemberStatus(); 
+    };
+
+    // 👆 第一階段：客人點擊「點我加入官方 LINE」
+    window.openLineAddFriend = function() {
+        // 1. 抓取整個「白色視窗本體」
+        let modalContent = document.querySelector('#friendshipModal .modal-content');
+        
+        // 2. 賦予它 0.3 秒的漸變能力，並立刻讓它「變透明 (淡出)」
+        modalContent.style.transition = 'opacity 0.3s ease-in-out';
+        modalContent.style.opacity = '0';
+        
+        // 3. 同時呼叫 LINE 加好友面板 (面板開始往上滑)
+        try {
+            liff.openWindow({ url: 'https://lin.ee/mty4uxj', external: false });
+        } catch(e) {
+            window.open('https://lin.ee/mty4uxj', '_blank');
+        }
+        
+        // 4. 第一個定時器：等 300 毫秒 (此時視窗已經完全隱形，沒人看得到)
+        setTimeout(() => {
+            // 在隱形狀態下，偷偷把按鈕從第一階段換成第二階段
+            let step1 = document.getElementById('step1-buttons');
+            let step2 = document.getElementById('step2-buttons');
+            
+            step1.classList.remove('d-flex');
+            step1.classList.add('d-none');
+            
+            step2.classList.remove('d-none');
+            step2.classList.add('d-flex');
+            
+            // 5. 第二個定時器：再等 500 毫秒 (此時 LINE 面板已經 100% 蓋住手機畫面了)
+            setTimeout(() => {
+                // 下令已經換裝完畢的視窗「淡入浮現」，準備迎接客人關閉面板
+                modalContent.style.opacity = '1';
+            }, 500);
+            
+        }, 300);
+    };
+
+    // 👆 第二階段：客人關閉面板後，點擊「我已經加好友了」
+    window.confirmFriendshipAdded = function() {
+        // 1. 隱藏 Modal
+        let modalEl = document.getElementById('friendshipModal');
+        let modalObj = bootstrap.Modal.getInstance(modalEl);
+        if(modalObj) modalObj.hide();
+        
+        // 2. 顯示載入動畫，直接去後台抓資料，保證不卡死！
+        document.getElementById('loadingArea').style.display = 'block';
+        checkMemberStatus();
+    };
+
+    window.switchFrontTab = function(tabId, btnEl) {
+        document.querySelectorAll('#innerSimTabs .nav-link').forEach(b => b.classList.remove('active'));
+        btnEl.classList.add('active');
+        document.querySelectorAll('#innerSimTabsContent .tab-pane').forEach(p => {
+            p.classList.remove('show', 'active');
+        });
+        document.getElementById(tabId).classList.add('show', 'active');
+    };
+
+    async function checkMemberStatus() {
+        try {
+            const res = await fetch(`${GAS_WEB_APP_URL}?action=getMemberData&lineUid=${currentLineUid}`);
+            const text = await res.text();
+            
+            let serverData;
+            try { serverData = JSON.parse(text); } 
+            catch(e) { throw new Error("API 網址可能未更新或權限設定錯誤。"); }
+
+            document.getElementById('loadingArea').style.display = 'none';
+            
+            if (serverData.status === "MAINTENANCE") {
+                document.getElementById('maintenanceArea').style.display = 'block';
+                document.getElementById('maintenanceMsg').innerText = serverData.message;
+                return; 
+            }
+
+            if (serverData.status === "BOUND") {
+                document.getElementById('homeArea').style.display = 'block';
+                document.getElementById('welcomeMsg').innerText = `嗨嗨～ ${serverData.userData["最新社群名稱"]}`;
+                
+                if (serverData.isAdmin) {
+                    document.getElementById('adminArea').style.display = 'block';
+                    if (serverData.isUnderMaintenance) {
+                        document.getElementById('adminMaintenanceAlert').style.display = 'block';
+                    }
+                }
+
+                window.lastAdminSearchText = ""; 
+                renderOrders(serverData.orders || [], serverData.promos || [], serverData.globalPages || {rules:{content:''}, instock:[]});
+
+            } else { document.getElementById('bindArea').style.display = 'block'; }
+        } catch (err) { 
+            document.getElementById('loadingArea').style.display = 'none'; 
+            alert("系統連線異常：\n" + err.message); 
+        }
+    }
+
+    async function executeBind() {
+      const phone = document.getElementById('bindPhone').value.trim(); const email = document.getElementById('bindEmail').value.trim(); const name = document.getElementById('bindName').value.trim();
+      if(!phone || !email || !name) return alert("手機號碼、Email 與社群名稱皆為必填欄位！");
+      const btn = document.getElementById('btnBind'); btn.innerText = "資料寫入中..."; btn.disabled = true;
+
+      try {
+          const res = await fetch(GAS_WEB_APP_URL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ action: 'bindUser', lineUid: currentLineUid, phone: phone, email: email, name: name }) });
+          const data = await res.json();
+          if(data.status === "SUCCESS") {
+             // 1. 隱藏綁定視窗
+             document.getElementById('bindArea').style.display = 'none'; 
+             
+             // 2. 🌟 關鍵修正：顯示載入動畫，不要給客人看空白畫面
+             document.getElementById('loadingArea').style.display = 'block';
+             let loadingText = document.querySelector('#loadingArea p');
+             if(loadingText) loadingText.innerText = "✅ 綁定成功！正在為您調閱專屬訂單...";
+             
+             // 3. 🌟 關鍵修正：強制等待 1.5 秒，讓 Airtable 建立好資料庫索引後，再去撈資料
+             setTimeout(() => {
+                 checkMemberStatus(); 
+             }, 1500);
+
+          } else { 
+              alert("發生錯誤: " + data.message); 
+              btn.innerText="確認綁定"; 
+              btn.disabled=false; 
+          }
+      } catch(e) { 
+          alert("網路錯誤，請保持網路暢通並重試。"); 
+          btn.innerText="確認綁定"; 
+          btn.disabled=false; 
+      }
+    }
+
+    let fetchInterval;
+    function startFetchAnimation(customText) {
+        const texts = customText ? [customText, "跨海連線中...", "快好了，再等我一下下..."] : ["專屬資料載入中...", "努力為您撈取最新進度...", "連線進行中..."];
+        let i = 0;
+        document.getElementById('carouselText').innerText = texts[0];
+        fetchInterval = setInterval(() => {
+            i = (i + 1) % texts.length;
+            document.getElementById('carouselText').innerText = texts[i];
+        }, 1500);
+    }
+
+    async function executeAdminSearch() {
+        const type = document.getElementById('adminSearchType').value;
+        const kw = document.getElementById('adminSearchKeyword').value.trim();
+        if (!kw) return alert("請輸入查詢關鍵字！");
+        
+        const container = document.getElementById('ordersContainer');
+        container.innerHTML = `
+            <div class="loader-overlay">
+                <div class="spinner-border mb-3" role="status"></div>
+                <div id="carouselText" class="text-carousel">🔍 正在調閱客戶資料...</div>
+            </div>`;
+            
+        startFetchAnimation("正在大海撈針尋找客人...");
+            
+        try {
+            const res = await fetch(GAS_WEB_APP_URL, {
+                method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ action: 'adminSearch', lineUid: currentLineUid, searchType: type, keyword: kw })
+            });
+            const data = await res.json();
+            clearInterval(fetchInterval);
+            
+            if (data.status === "SUCCESS") {
+                window.lastAdminSearchText = `【${kw}】的訂單`;
+                renderOrders(data.data.orders, data.data.promos, data.data.globalPages);
+            } else {
+                container.innerHTML = `<div class="card card-custom text-center p-4"><h6 class="fw-bold text-danger mb-2">❌ 查詢失敗</h6><p class="small fw-bold mb-0" style="white-space: pre-wrap;">${data.message}</p></div>`;
+            }
+        } catch(err) {
+            clearInterval(fetchInterval);
+            container.innerHTML = `<div class="alert alert-danger text-center">網路連線錯誤，請重試</div>`;
+        }
+    }
+
+    async function promptEditLast5(orderId, currentLast5) {
+        if (event) { event.stopPropagation(); }
+        let newLast5 = prompt("請輸入您實際匯款帳號的『最後五碼』：", currentLast5 || "");
+        if (newLast5 === null) return; 
+        newLast5 = newLast5.trim();
+        if (newLast5.length !== 5 || isNaN(newLast5)) return alert("請輸入正確的 5 位數字！");
+
+        const container = document.getElementById('ordersContainer');
+        container.innerHTML = `
+            <div class="loader-overlay">
+                <div class="progress-bar-custom"><div class="progress-bar-fill"></div></div>
+                <div class="text-carousel">📡 正在加密傳輸您的帳號資訊...</div>
+            </div>`;
+
+        try {
+            const res = await fetch(GAS_WEB_APP_URL, {
+                method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ action: 'updateLast5', orderId: orderId, newLast5: newLast5, lineUid: currentLineUid })
+            });
+            const data = await res.json();
+            if (data.status === "SUCCESS") { 
+                alert("✅ 帳號修改成功！"); 
+                checkMemberStatus(); 
+            } 
+            else { alert("修改失敗：" + data.message); checkMemberStatus(); }
+        } catch(err) { alert("網路連線錯誤，請稍後再試。"); checkMemberStatus(); }
+    }
+
+    function toggleOrderCard(id) { let el = document.getElementById(id); if (el.classList.contains('show')) el.classList.remove('show'); else el.classList.add('show'); }
+    
+    function toggleProgressCard(id) { 
+        if (event) { event.stopPropagation(); }
+        let el = document.getElementById(id); 
+        let btn = document.getElementById(id + '-btn');
+        if (el.classList.contains('show')) {
+            el.classList.remove('show');
+            btn.innerHTML = '🚚 查看詳細貨況進度 <i class="bi bi-chevron-down"></i>';
+        } else { 
+            el.classList.add('show'); 
+            btn.innerHTML = '🚚 收起貨況進度 <i class="bi bi-chevron-up"></i>';
+        }
+    }
+
+    function renderOrders(orders, promos, globalPages) {
+        const container = document.getElementById('ordersContainer');
+        
+        let promosHtml = '';
+        if (promos && promos.length > 0) {
+            let pCards = promos.map(p => `
+                <div style="background:#fffaf5; border:1px solid #e8d5c4; border-radius:12px; padding:16px; margin-bottom:12px; text-align:left; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                    <div style="margin-bottom: 12px;">
+                        <h6 style="font-weight:900; color:var(--brand-charcoal); line-height: 1.4; margin-bottom:0;">👑 ${escHTML(p.title)}</h6>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-size:14.5px; color:#dc3545; font-weight:900;">${p.exp ? `⏰ 結單: ${escHTML(p.exp)}` : ''}</div>
+                        <button class="shadow-sm" style="background-color:var(--brand-brown); color:#fff; border:none; padding:8px 20px; font-size:14px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="window.open('${p.url}', '_blank')">👉 前往填單</button>
+                    </div>
+                </div>
+            `).join('');
+            promosHtml = `<div class="text-start">${pCards}</div>`;
+        } else {
+            promosHtml = `<div class="p-5 rounded border border-2 border-theme-secondary border-dashed bg-white shadow-sm text-center"><h6 class="fw-bold m-0" style="color: #888;">目前沒有進行中的開團喔！</h6></div>`;
+        }
+
+        let ordersHtml = '';
+        let titleHtmlStr = `<h6 class="fw-bold mb-3 ms-1" style="color: var(--brand-charcoal);"><i class="bi bi-box-seam me-2"></i>您的訂單紀錄</h6>`;
+        if (window.lastAdminSearchText) {
+            titleHtmlStr = `<h6 class="fw-bold mb-3 ms-1" style="color: #a95a52;"><i class="bi bi-person-lines-fill me-2"></i>客戶：${window.lastAdminSearchText}</h6>`;
+        }
+        
+        if (!orders || orders.length === 0) { 
+            ordersHtml = `<div class="p-5 rounded border border-2 border-theme-secondary border-dashed bg-white shadow-sm text-center"><h6 class="fw-bold m-0" style="color: #888;">📦 您目前沒有進行中的訂單</h6></div>`; 
+        } else {
+            let cardsHtml = orders.map((order, idx) => {
+                let collapseId = `order-collapse-${idx}`; 
+                let progressCollapseId = `progress-collapse-${idx}`; 
+                
+                let isPaid = (order.payStatus.includes('完成') || order.payStatus.includes('✅') || order.payStatus.includes('貨付'));
+                let badgeClass = isPaid ? 'status-done' : 'badge-status'; 
+                let shipDisplay = order.ship > 0 ? `-$${order.ship}` : `$0`;
+
+                let titleText = escHTML(order.label);
+                let titleHtml = `<div class="order-title-container"><span class="order-title-brand">${titleText}</span></div>`;
+                if (/\||｜/.test(titleText)) {
+                    let parts = titleText.split(/\||｜/);
+                    titleHtml = `
+                    <div class="order-title-container">
+                        <span class="order-title-brand">${parts[0].trim()}</span>
+                        <span class="order-title-series">${parts[1].trim()}</span>
+                    </div>`;
+                }
+
+                let noticeHtml = '';
+                if (order.groupNotice || order.groupMemo) {
+                    noticeHtml = `<div class="notice-box">📢 公告：<br>${escHTML(order.groupNotice)}<br>${escHTML(order.groupMemo)}</div>`;
+                }
+
+                let progressHtml = '';
+                let progressContentHtml = '';
+                
+                if (order.progress) {
+                    let p = order.progress;
+                    let hasB1 = p.b1 && (p.b1.purchased > 0 || p.b1.totalPurchased > 0);
+                    let hasB2 = p.b2 && (p.b2.purchased > 0 || p.b2.totalPurchased > 0);
+
+                    let titleB1 = (hasB1 && hasB2) ? "📦 [非預購款] 貨況" : "📦 貨況進度";
+                    let titleB2 = (hasB1 && hasB2) ? "🚚 [預購款] 貨況" : "🚚 貨況進度";
+                    
+                    if (hasB1) {
+                        let t = p.b1.purchased || p.b1.totalPurchased;
+                        let rawStep1 = p.b1.step1 !== undefined ? p.b1.step1 : (p.b1.shipped || 0);
+                        let rawStep2 = p.b1.step2 || 0;
+                        let rawStep3 = p.b1.step3 || 0;
+                        let rawStep4 = p.b1.step4 !== undefined ? p.b1.step4 : (p.b1.twArrived || 0);
+                        
+                        let pctStep1 = Math.round((rawStep1 / t) * 100) || 0;
+                        let pctStep2 = Math.max(0, Math.round(((rawStep2 - rawStep3) / t) * 100)) || 0;
+                        let pctStep3 = Math.max(0, Math.round(((rawStep3 - rawStep4) / t) * 100)) || 0;
+                        let pctStep4 = Math.round((rawStep4 / t) * 100) || 0;
+                        
+                        let act1 = rawStep1 > 0 ? 'active' : ''; let act2 = rawStep2 > 0 ? 'active' : ''; let act3 = rawStep3 > 0 ? 'active' : ''; let act4 = rawStep4 > 0 ? 'active' : '';
+                        
+                        let notShippedMsg = (rawStep1 === 0) ? `<div style="margin-top: 20px; padding: 12px; background-color: #FFF3CD; color: #856404; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; border: 1px dashed #ffe8a1;">⏳ 官方尚未出貨</div>` : '';
+
+                        progressContentHtml += `
+                        <div class="progress-wrapper mb-3">
+                            <div class="progress-title"><span>${titleB1}</span></div>
+                            <div class="tracker-container">
+                                <div class="tracker-line"></div>
+                                <div class="tracker-step"><div class="step-dot ${act1}"></div><div class="step-label ${act1?'':'muted'}">官方出貨</div><div class="step-pct ${act1?'':'muted'}">${pctStep1}%</div></div>
+                                <div class="tracker-step"><div class="step-dot ${act2}"></div><div class="step-label ${act2?'':'muted'}">泰國到貨</div><div class="step-pct ${act2?'':'muted'}">${pctStep2}%</div></div>
+                                <div class="tracker-step"><div class="step-dot ${act3}"></div><div class="step-label ${act3?'':'muted'}">海關查驗</div><div class="step-pct ${act3?'':'muted'}">${pctStep3}%</div></div>
+                                <div class="tracker-step"><div class="step-dot final ${act4}"></div><div class="step-label final ${act4?'':'muted'}">台灣到貨</div><div class="step-pct final ${act4?'':'muted'}">${pctStep4}%</div></div>
+                            </div>
+                            ${notShippedMsg}
+                        </div>`;
+                    }
+                    
+                    if (hasB2) {
+                        let t = p.b2.purchased || p.b2.totalPurchased;
+                        let rawStep1 = p.b2.step1 !== undefined ? p.b2.step1 : (p.b2.shipped || 0);
+                        let rawStep2 = p.b2.step2 !== undefined ? p.b2.step2 : (p.b2.flight || 0);
+                        let rawStep3 = p.b2.step3 !== undefined ? p.b2.step3 : (p.b2.flight || 0);
+                        let rawStep4 = p.b2.step4 !== undefined ? p.b2.step4 : (p.b2.twArrived || 0);
+
+                        let pctStep1 = Math.round((rawStep1 / t) * 100) || 0;
+                        let pctStep2 = Math.max(0, Math.round(((rawStep2 - rawStep3) / t) * 100)) || 0;
+                        let pctStep3 = Math.max(0, Math.round(((rawStep3 - rawStep4) / t) * 100)) || 0;
+                        let pctStep4 = Math.round((rawStep4 / t) * 100) || 0;
+
+                        let act1 = rawStep1 > 0 ? 'active' : ''; let act2 = rawStep2 > 0 ? 'active' : ''; let act3 = rawStep3 > 0 ? 'active' : ''; let act4 = rawStep4 > 0 ? 'active' : '';
+                        
+                        let notShippedMsg = (rawStep1 === 0) ? `<div style="margin-top: 20px; padding: 12px; background-color: #FFF3CD; color: #856404; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; border: 1px dashed #ffe8a1;">⏳ 官方尚未出貨</div>` : '';
+
+                        progressContentHtml += `
+                        <div class="progress-wrapper mb-3">
+                            <div class="progress-title"><span>${titleB2}</span></div>
+                            <div class="tracker-container">
+                                <div class="tracker-line"></div>
+                                <div class="tracker-step"><div class="step-dot ${act1}"></div><div class="step-label ${act1?'':'muted'}">官方出貨</div><div class="step-pct ${act1?'':'muted'}">${pctStep1}%</div></div>
+                                <div class="tracker-step"><div class="step-dot ${act2}"></div><div class="step-label ${act2?'':'muted'}">泰國到貨</div><div class="step-pct ${act2?'':'muted'}">${pctStep2}%</div></div>
+                                <div class="tracker-step"><div class="step-dot ${act3}"></div><div class="step-label ${act3?'':'muted'}">海關查驗</div><div class="step-pct ${act3?'':'muted'}">${pctStep3}%</div></div>
+                                <div class="tracker-step"><div class="step-dot final ${act4}"></div><div class="step-label final ${act4?'':'muted'}">台灣到貨</div><div class="step-pct final ${act4?'':'muted'}">${pctStep4}%</div></div>
+                            </div>
+                            ${notShippedMsg}
+                        </div>`;
+                    }
+
+                    if (progressContentHtml !== '') {
+                        progressHtml = `
+                        <div id="${progressCollapseId}-btn" class="progress-toggle-btn" onclick="toggleProgressCard('${progressCollapseId}')">
+                            🚚 查看詳細貨況進度 <i class="bi bi-chevron-down"></i>
+                        </div>
+                        <div id="${progressCollapseId}" class="progress-content">
+                            ${progressContentHtml}
+                        </div>`;
+                    }
+                }
+
+                let itemsHtml = order.items.map(i => `
+                    <div class="item-row">
+                        <div><span class="item-name">${escHTML(i.name)}</span><span class="item-qty">x${i.qty}</span></div>
+                        <div class="fw-bold">$${i.amount}</div>
+                    </div>
+                `).join('');
+
+                let editBtn = !isPaid ? `<span class="edit-btn" onclick="promptEditLast5('${order.key}', '${order.last5}')"><i class="bi bi-pencil-square"></i> 修改</span>` : '';
+                let last5ValueHtml = order.last5 ? `<span class="last5-value">${escHTML(order.last5)} ${editBtn}</span>` : `<span class="text-muted fst-italic fw-normal" style="font-size:13px;">尚未提供 ${editBtn}</span>`;
+                let last5Html = `<div class="last5-row"><div style="color:#666;">匯款後五碼</div>${last5ValueHtml}</div>`;
+
+                let detailsBoxHtml = `
+                <div class="details-box shadow-sm mb-3">
+                    ${itemsHtml}
+                    <div class="summary-divider"></div>
+                    <div class="summary-row"><span>商品小計</span><span>$${order.itemsTotal}</span></div>
+                    <div class="summary-row mb-3"><span>賣貨便金額</span><span>${shipDisplay}</span></div>
+                    ${last5Html}
+                    <div class="total-row"><span>應匯款金額</span><span class="total-price">$${order.due}</span></div>
+                </div>`;
+
+                let bankHtml = '';
+                if (isPaid) {
+                    let noteHtml = order.personalNote ? `<div class="done-note"><i class="bi bi-info-circle me-1"></i> 備註：${escHTML(order.personalNote)}</div>` : '';
+                    bankHtml = `
+                    <div class="bank-info text-center shadow-sm">
+                        <div class="fw-bold fs-5" style="color: #436b46;"><i class="bi bi-check-circle-fill me-2"></i>此訂單已完成匯款對帳</div>
+                        ${noteHtml}
+                    </div>`;
+                } else if (order.groupBankInfo) {
+                    let deadlineHtml = order.groupDeadline ? `<span class="bank-deadline">匯款期限：${escHTML(order.groupDeadline)}</span>` : '';
+                    bankHtml = `
+                    <div class="bank-info shadow-sm">
+                        <div class="bank-title">
+                            <span class="bank-title-text"><i class="bi bi-credit-card-2-front-fill me-1"></i> 專屬匯款資訊</span>
+                            ${deadlineHtml}
+                        </div>
+                        <div class="bank-text">${escHTML(order.groupBankInfo)}</div>
+                        <div class="bank-warning">(請不要寫備註訊息，會對不到後五碼~)</div>
+                    </div>`;
+                }
+
+                return `
+                <div class="card-order mb-4">
+                    <div class="order-header" onclick="toggleOrderCard('${collapseId}')">
+                        ${titleHtml}
+                        <div class="badge-status ${badgeClass}">${escHTML(order.payStatus)}</div>
+                    </div>
+                    <div id="${collapseId}" class="order-content">
+                        ${noticeHtml}
+                        ${progressHtml}
+                        ${detailsBoxHtml}
+                        ${bankHtml}
+                    </div>
+                </div>`;
+            }).join('');
+
+            ordersHtml = `<div class="text-start">${titleHtmlStr}${cardsHtml}</div>`;
+        }
+
+        let instockArr = globalPages.instock;
+        let instockHtml = '';
+        if (instockArr && instockArr.length > 0) {
+            instockHtml = instockArr.map(store => `
+                <div style="background:#fbfaf9; border:1px solid #e0d8d0; border-radius:12px; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; text-align:left; gap:15px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); margin-top:8px;">
+                    <div style="flex:1; min-width:0;">
+                        <h6 style="font-weight:900; color:var(--brand-charcoal); line-height: 1.4; margin-bottom:${store.content ? '6px' : '0'};"><i class="bi bi-shop me-2"></i>${escHTML(store.title || '現貨賣場')}</h6>
+                        ${store.content ? `<div class="text-muted small" style="line-height: 1.5; white-space: pre-wrap;">${escHTML(store.content)}</div>` : ''}
+                    </div>
+                    ${store.link ? `<button class="shadow-sm" style="background-color: var(--brand-brown); color:#fff; border:none; padding:10px 16px; font-size:14px; border-radius:8px; white-space:nowrap; flex-shrink:0; font-weight:bold; cursor:pointer;" onclick="window.open('${store.link}', '_blank')">👉 前往逛逛</button>` : ''}
+                </div>
+            `).join('');
+            instockHtml = `<div class="text-start">${instockHtml}</div>`;
+        } else {
+            instockHtml = `<div class="p-5 rounded border border-2 border-theme-secondary border-dashed bg-white shadow-sm text-center"><h6 class="fw-bold m-0" style="color: #888;">目前尚未開放現貨賣場喔！</h6></div>`;
+        }
+
+        let rulesData = globalPages.rules;
+        let rulesHtml = `
+            <div class="card-order p-4 text-start shadow-sm mt-0">
+                <h6 class="fw-bold mb-3" style="color: var(--brand-charcoal);"><i class="bi bi-book me-2"></i>Wander Ease 代購與服務規則</h6>
+                <div class="text-muted small" style="line-height: 1.8; white-space: pre-wrap;">${escHTML(rulesData.content || '尚無公告規則。')}</div>
+            </div>
+        `;
+
+        let finalHtml = `
+            <div class="sim-nav-pills" id="innerSimTabs" role="tablist">
+                <button class="nav-link active" onclick="switchFrontTab('sim-orders', this)">📦 訂單與貨況</button>
+                <button class="nav-link" onclick="switchFrontTab('sim-promos', this)">🔥 最新開團</button>
+                <button class="nav-link" onclick="switchFrontTab('sim-instock', this)">🛍️ 現貨賣場</button>
+                <button class="nav-link" onclick="switchFrontTab('sim-rules', this)">📝 代購規則</button>
+            </div>
+            
+            <a href="https://lin.ee/mty4uxj" target="_blank" class="btn-contact-line">
+                <i class="bi bi-chat-dots-fill me-1"></i> 聯絡我們 (官方 LINE)
+            </a>
+            
+            <div class="tab-content mt-2 text-center" id="innerSimTabsContent">
+                <div class="tab-pane fade show active" id="sim-orders" role="tabpanel">${ordersHtml}</div>
+                <div class="tab-pane fade" id="sim-promos" role="tabpanel">${promosHtml}</div>
+                <div class="tab-pane fade" id="sim-instock" role="tabpanel">${instockHtml}</div>
+                <div class="tab-pane fade" id="sim-rules" role="tabpanel">${rulesHtml}</div>
+            </div>
+        `;
+
+        container.innerHTML = finalHtml;
+    }
+
+    function escHTML(str) { return String(str||'').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
+  </script>
+</body>
+</html>
