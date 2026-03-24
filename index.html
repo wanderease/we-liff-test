@@ -55,7 +55,7 @@
     .btn-contact-line:hover { background: #faf5f0; color: #4A3C49; text-decoration: none;}
 
     .card-order { background: var(--brand-white); border-radius: 16px; border: 1px solid #e0d8d0; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(44,44,47,0.03); overflow: hidden; text-align: left; }
-    /* 🌟 新增：預購卡片特殊樣式 */
+    
     .card-order.preorder-card { border: 2px solid #a95a52; box-shadow: 0 4px 16px rgba(169, 90, 82, 0.15); }
     .card-order.preorder-card .order-header { background-color: #fdf3f2; }
     .card-order.preorder-card .order-header:hover { background-color: #fae8e6; }
@@ -68,7 +68,6 @@
     
     .badge-status { background-color: #fdf3f2; color: #a95a52; border: 1px solid #fdf3f2; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; letter-spacing: 1px; flex-shrink: 0; }
     .status-done { background-color: #eef5ee; color: #436b46; border-color: #eef5ee; }
-    /* 🌟 新增：許願候補專用 Badge */
     .status-waitlist { background-color: #fff8e6; color: #d39e00; border-color: #fff8e6; }
     
     .order-content { display: none; border-top: 1px dashed #e0d8d0; padding-top: 15px; animation: fadeIn 0.3s ease-in-out; }
@@ -102,7 +101,6 @@
     .item-name { font-weight: 700; line-height: 1.4; }
     .item-qty { color: #888; margin-left: 8px; font-size: 12px; font-weight: 600; }
     
-    /* 🌟 新增：預購品項狀態顯示 */
     .preorder-status { font-size: 12px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
     .status-get { background-color: #eef5ee; color: #436b46; }
     .status-miss { background-color: #fdf3f2; color: #a95a52; }
@@ -226,6 +224,17 @@
     </div>
   </div>
 
+  <div id="preorder-preview-bar" class="shadow-lg" style="display:none; position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; z-index: 1050; border-top: 3px solid #dc3545; padding: 15px 20px; border-radius: 20px 20px 0 0;">
+      <div class="container" style="max-width: 600px; margin: 0 auto;">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="fw-bold m-0" style="color: #dc3545;"><i class="bi bi-cart-check-fill me-1"></i> 待確認處理清單</h6>
+              <span class="badge bg-danger rounded-pill" id="preview-count">0</span>
+          </div>
+          <ul id="preview-list" class="list-unstyled mb-3" style="max-height: 120px; overflow-y: auto; font-size: 13.5px; font-weight: 600;"></ul>
+          <button id="btn-submit-decisions" class="btn btn-danger w-100 fw-bold rounded-pill shadow-sm" onclick="submitPreorderBatch()">確認送出修改</button>
+      </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   
@@ -235,8 +244,10 @@
     const LIFF_ID = "2009208139-8evwKUxz"; 
 
     let currentLineUid = "";
+    
+    // 🌟 預購 2選1 暫存區
+    let pendingPreorderActions = {};
 
-    // 🌟 修正 1：將切換分頁函數移到全域，避免手機版找不到
     window.switchFrontTab = function(tabId, btnEl) {
         document.querySelectorAll('#innerSimTabs .nav-link').forEach(b => b.classList.remove('active'));
         btnEl.classList.add('active');
@@ -349,6 +360,7 @@
                 }
 
                 window.lastAdminSearchText = ""; 
+                window.currentServerData = serverData; // 🌟 存入全域讓 renderOrders 抓預購資料
                 renderOrders(serverData.orders || [], serverData.promos || [], serverData.globalPages || {rules:{content:''}, instock:[]});
 
             } else { document.getElementById('bindArea').style.display = 'block'; }
@@ -423,6 +435,7 @@
             
             if (data.status === "SUCCESS") {
                 window.lastAdminSearchText = `【${kw}】的訂單`;
+                window.currentServerData = data.data; // 🌟 存入全域供老闆預覽預購單
                 renderOrders(data.data.orders, data.data.promos, data.data.globalPages);
             } else {
                 container.innerHTML = `<div class="card card-custom text-center p-4"><h6 class="fw-bold text-danger mb-2">❌ 查詢失敗</h6><p class="small fw-bold mb-0" style="white-space: pre-wrap;">${data.message}</p></div>`;
@@ -476,6 +489,77 @@
         }
     }
 
+    // 🌟 預購互動按鈕邏輯
+    function selectPreorderAction(recordId, masterId, name, brand, series, shortQty, customerName, actionType) {
+        pendingPreorderActions[recordId] = {
+            masterId: masterId, name: name, brand: brand, series: series,
+            shortQty: shortQty, customerName: customerName, action: actionType
+        };
+        document.getElementById('action-box-' + recordId).style.display = 'none';
+        renderPreorderPreview();
+    }
+
+    function removePreorderAction(recordId) {
+        delete pendingPreorderActions[recordId];
+        document.getElementById('action-box-' + recordId).style.display = 'flex';
+        renderPreorderPreview();
+    }
+
+    function renderPreorderPreview() {
+        const list = document.getElementById('preview-list');
+        const bar = document.getElementById('preorder-preview-bar');
+        list.innerHTML = '';
+        
+        let count = 0;
+        for (const [id, data] of Object.entries(pendingPreorderActions)) {
+            count++;
+            let actionText = data.action === 'WAITLIST' ? '<span class="text-warning">⏳轉候補</span>' : '<span class="text-danger">❌取消</span>';
+            list.innerHTML += `
+                <li class="d-flex justify-content-between align-items-center border-bottom border-light py-2">
+                    <span class="text-truncate" style="max-width: 70%;">${escHTML(data.name)}</span>
+                    <div class="d-flex align-items-center">
+                        <strong class="me-2">${actionText}</strong>
+                        <button class="btn btn-sm btn-light border p-0 px-2 rounded-circle" onclick="removePreorderAction('${id}')">❌</button>
+                    </div>
+                </li>`;
+        }
+        
+        document.getElementById('preview-count').innerText = count;
+        bar.style.display = count > 0 ? 'block' : 'none';
+        document.body.style.paddingBottom = count > 0 ? '200px' : '50px';
+    }
+
+    async function submitPreorderBatch() {
+        if (Object.keys(pendingPreorderActions).length === 0) return;
+        const btn = document.getElementById('btn-submit-decisions');
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>處理中...`;
+        btn.disabled = true;
+
+        try {
+            const payloadStr = JSON.stringify({ actions: pendingPreorderActions });
+            const res = await fetch(GAS_WEB_APP_URL, {
+                method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ action: 'submitPreorderDecisions', lineUid: currentLineUid, payloadStr: payloadStr })
+            });
+            const data = await res.json();
+            
+            if (data.status === "SUCCESS") {
+                pendingPreorderActions = {}; // 清空購物車
+                renderPreorderPreview();
+                document.getElementById('loadingArea').style.display = 'block';
+                document.getElementById('homeArea').style.display = 'none';
+                document.querySelector('#loadingArea p').innerText = "✅ 處理成功！正在為您更新訂單畫面...";
+                checkMemberStatus(); // 重新整理畫面
+            } else {
+                alert("處理失敗：" + data.message);
+                btn.innerHTML = "確認送出修改"; btn.disabled = false;
+            }
+        } catch (err) {
+            alert("網路錯誤，請重試");
+            btn.innerHTML = "確認送出修改"; btn.disabled = false;
+        }
+    }
+
     function renderOrders(orders, promos, globalPages) {
         const container = document.getElementById('ordersContainer');
         
@@ -498,18 +582,67 @@
         }
 
         let ordersHtml = '';
-        let titleHtmlStr = `<h6 class="fw-bold mb-3 ms-1" style="color: var(--brand-charcoal);"><i class="bi bi-box-seam me-2"></i>您的訂單紀錄</h6>`;
+        let titleHtmlStr = `<h6 class="fw-bold mb-3 ms-1" style="color: var(--brand-charcoal);"><i class="bi bi-box-seam me-2"></i>您的正式訂單紀錄</h6>`;
         if (window.lastAdminSearchText) {
             titleHtmlStr = `<h6 class="fw-bold mb-3 ms-1" style="color: #a95a52;"><i class="bi bi-person-lines-fill me-2"></i>客戶：${window.lastAdminSearchText}</h6>`;
         }
         
-        // 🌟 修正 2：為未來的預購跟許願池預留 HTML 變數，目前先讓它們是空的
-        let officialOrdersHtml = '';
+        // 🌟 預購卡片渲染邏輯
         let preorderOrdersHtml = '';
+        if (window.currentServerData && window.currentServerData.preorders && window.currentServerData.preorders.length > 0) {
+            let preCards = window.currentServerData.preorders.map((po, idx) => {
+                let itemsHtml = po.items.map(i => {
+                    let safeName = escHTML(i.productName);
+                    
+                    if (i.reqQty === -1) return `<div class="item-row is-missing"><span class="item-name text-muted">❌ ${safeName}</span><span class="preorder-status badge bg-secondary">已取消</span></div>`;
+                    if (i.reqQty === -2) return `<div class="item-row"><span class="item-name text-secondary">⏳ ${safeName}</span><span class="preorder-status status-waitlist">已轉候補</span></div>`;
+                    
+                    let shortQty = i.reqQty - i.allocQty;
+                    if (shortQty <= 0 && i.allocQty > 0) return `<div class="item-row"><span class="item-name text-success">✅ ${safeName} <span class="item-qty">x${i.allocQty}</span></span><span class="preorder-status status-get">已買到</span></div>`;
+                    
+                    if (shortQty > 0) {
+                        let missText = i.allocQty > 0 ? `<span class="text-danger small ms-2">(缺${shortQty}件)</span>` : '';
+                        let boughtText = i.allocQty > 0 ? `<div class="item-row mb-1"><span class="item-name text-success">✅ ${safeName} <span class="item-qty">x${i.allocQty}</span></span><span class="preorder-status status-get">已買到</span></div>` : '';
+                        
+                        return `
+                        ${boughtText}
+                        <div class="p-2 mb-2 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded" style="font-size: 14px;">
+                            <div class="fw-bold text-danger mb-2">❌ ${safeName} ${missText}</div>
+                            <div class="d-flex gap-2" id="action-box-${i.recordId}">
+                                <button class="btn btn-sm btn-outline-danger fw-bold flex-fill bg-white" onclick="selectPreorderAction('${i.recordId}', '${po.masterId}', '${escapeQuotes(i.productName)}', '${escapeQuotes(i.brand)}', '${escapeQuotes(i.series)}', ${shortQty}, '${escapeQuotes(po.customerName)}', 'CANCEL')">取消購買</button>
+                                <button class="btn btn-sm btn-warning fw-bold flex-fill text-dark" onclick="selectPreorderAction('${i.recordId}', '${po.masterId}', '${escapeQuotes(i.productName)}', '${escapeQuotes(i.brand)}', '${escapeQuotes(i.series)}', ${shortQty}, '${escapeQuotes(po.customerName)}', 'WAITLIST')">轉候補池</button>
+                            </div>
+                        </div>`;
+                    }
+                    return '';
+                }).join('');
+
+                return `
+                <div class="card-order preorder-card mb-4">
+                    <div class="order-header" style="cursor: default;">
+                        <div class="order-title-container">
+                            <span class="order-title-brand"><i class="bi bi-bag-plus-fill me-1"></i> 預購處理中</span>
+                            <span class="order-title-series">單號: ${escHTML(po.orderNo)}</span>
+                        </div>
+                        <div class="badge-status status-waitlist shadow-sm">對帳前清單</div>
+                    </div>
+                    <div class="order-content show p-3">
+                        <div class="notice-box bg-white border-danger text-danger mb-3 shadow-sm">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> 您的預購單中有缺貨品項，請針對下方商品進行 2選1 處理，確認後才可進入匯款對帳階段哦！
+                        </div>
+                        ${itemsHtml}
+                    </div>
+                </div>`;
+            }).join('');
+            
+            preorderOrdersHtml = `<div class="text-start mb-4"><h6 class="fw-bold mb-3 ms-1 text-danger"><i class="bi bi-exclamation-circle-fill me-2"></i>待處理預購單</h6>${preCards}</div>`;
+        }
+
         let waitlistHtml = '';
+        let officialOrdersHtml = '';
         
         if (!orders || orders.length === 0) { 
-            officialOrdersHtml = `<div class="p-5 rounded border border-2 border-theme-secondary border-dashed bg-white shadow-sm text-center"><h6 class="fw-bold m-0" style="color: #888;">📦 您目前沒有進行中的訂單</h6></div>`; 
+            officialOrdersHtml = `<div class="p-5 rounded border border-2 border-theme-secondary border-dashed bg-white shadow-sm text-center"><h6 class="fw-bold m-0" style="color: #888;">📦 您目前沒有進行中的正式訂單</h6></div>`; 
         } else {
             officialOrdersHtml = orders.map((order, idx) => {
                 let collapseId = `order-collapse-${idx}`; 
@@ -674,9 +807,10 @@
                 </div>`;
             }).join('');
             
-            // 將未來的預購跟許願池放在正式訂單的上方
-            ordersHtml = `<div class="text-start">${titleHtmlStr}${preorderOrdersHtml}${waitlistHtml}${cardsHtml}</div>`;
         }
+        
+        // 🌟 將預購卡片印在最上方
+        ordersHtml = `<div class="text-start">${preorderOrdersHtml}${titleHtmlStr}${waitlistHtml}${officialOrdersHtml}</div>`;
 
         let instockArr = globalPages.instock;
         let instockHtml = '';
@@ -727,6 +861,7 @@
     }
 
     function escHTML(str) { return String(str||'').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
+    function escapeQuotes(str) { return String(str||'').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
   </script>
 </body>
 </html>
