@@ -56,10 +56,6 @@
 
     .card-order { background: var(--brand-white); border-radius: 16px; border: 1px solid #e0d8d0; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(44,44,47,0.03); overflow: hidden; text-align: left; }
     
-    .card-order.preorder-card { border: 2px solid #a95a52; box-shadow: 0 4px 16px rgba(169, 90, 82, 0.15); }
-    .card-order.preorder-card .order-header { background-color: #fdf3f2; }
-    .card-order.preorder-card .order-header:hover { background-color: #fae8e6; }
-    
     .order-header { background-color: #fbfaf9; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; gap: 15px; }
     .order-header:hover { background-color: #f6f0ea; }
     .order-title-container { display: block; flex: 1; min-width: 0; }
@@ -98,13 +94,16 @@
     .details-box { background-color: #fbfaf9; border: 1px solid #e0d8d0; border-radius: 12px; margin: 0 20px 20px 20px; padding: 15px 20px; }
     .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #e0d8d0; font-size: 14.5px; color: var(--brand-charcoal); }
     .item-row:first-child { padding-top: 0; }
-    .item-name { font-weight: 700; line-height: 1.4; }
+    .item-name { font-weight: 700; line-height: 1.4; display: flex; align-items: center;}
     .item-qty { color: #888; margin-left: 8px; font-size: 12px; font-weight: 600; }
     
     .preorder-status { font-size: 12px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
     .status-get { background-color: #eef5ee; color: #436b46; }
     .status-miss { background-color: #fdf3f2; color: #a95a52; }
-    .item-row.is-missing { opacity: 0.7; }
+    .status-wait { background-color: #fff8e6; color: #d39e00; }
+    .status-cancel { background-color: #f0f0f0; color: #6c757d; }
+    
+    .item-row.is-missing { opacity: 0.6; }
     .item-row.is-missing .item-name { text-decoration: line-through; }
     
     .summary-divider { height: 1px; border-top: 1px dashed #e0d8d0; margin: 15px 0; }
@@ -124,6 +123,13 @@
     .bank-text { font-family: monospace; font-size: 15px; font-weight: bold; color: var(--brand-charcoal); white-space: pre-wrap; line-height: 1.6; }
     .bank-warning { font-size: 13px; font-weight: bold; color: #a95a52; margin-top: 12px; }
     .done-note { margin-top: 10px; font-size: 13.5px; font-weight: 700; color: var(--brand-brown); background-color: #f6f0ea; padding: 8px 12px; border-radius: 8px; display: inline-block; }
+
+    /* 🌟 行內 2選1 按鈕樣式 */
+    .btn-inline-action { padding: 4px 10px; font-size: 12px; font-weight: 700; border-radius: 6px; transition: 0.2s; white-space: nowrap; margin-left: 5px; }
+    .btn-inline-cancel { border: 1px solid #dc3545; color: #dc3545; background-color: #fff; }
+    .btn-inline-cancel:hover { background-color: #dc3545; color: #fff; }
+    .btn-inline-waitlist { border: 1px solid #d39e00; color: #d39e00; background-color: #fff; }
+    .btn-inline-waitlist:hover { background-color: #d39e00; color: #fff; }
   </style>
 </head>
 <body>
@@ -239,13 +245,10 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   
   <script>
-    // 🌟 請換上你全新的測試版 API 網址與 LIFF ID
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxpKSDTaAeJxhZQbqFbVCu_mmbDyktti26RUXr37mc7I384ZCCE6Gm6hU__1eXMGd54/exec"; 
     const LIFF_ID = "2009208139-8evwKUxz"; 
 
     let currentLineUid = "";
-    
-    // 🌟 預購 2選1 暫存區
     let pendingPreorderActions = {};
 
     window.switchFrontTab = function(tabId, btnEl) {
@@ -289,7 +292,6 @@
         let modalEl = document.getElementById('friendshipModal');
         let modalObj = bootstrap.Modal.getInstance(modalEl);
         if(modalObj) modalObj.hide();
-        
         document.getElementById('loadingArea').style.display = 'block'; 
         checkMemberStatus(); 
     };
@@ -298,27 +300,11 @@
         let modalContent = document.querySelector('#friendshipModal .modal-content');
         modalContent.style.transition = 'opacity 0.3s ease-in-out';
         modalContent.style.opacity = '0';
-        
-        try {
-            liff.openWindow({ url: 'https://lin.ee/mty4uxj', external: false });
-        } catch(e) {
-            window.open('https://lin.ee/mty4uxj', '_blank');
-        }
-        
+        try { liff.openWindow({ url: 'https://lin.ee/mty4uxj', external: false }); } catch(e) { window.open('https://lin.ee/mty4uxj', '_blank'); }
         setTimeout(() => {
-            let step1 = document.getElementById('step1-buttons');
-            let step2 = document.getElementById('step2-buttons');
-            
-            step1.classList.remove('d-flex');
-            step1.classList.add('d-none');
-            
-            step2.classList.remove('d-none');
-            step2.classList.add('d-flex');
-            
-            setTimeout(() => {
-                modalContent.style.opacity = '1';
-            }, 500);
-            
+            document.getElementById('step1-buttons').classList.replace('d-flex', 'd-none');
+            document.getElementById('step2-buttons').classList.replace('d-none', 'd-flex');
+            setTimeout(() => { modalContent.style.opacity = '1'; }, 500);
         }, 300);
     };
 
@@ -326,7 +312,6 @@
         let modalEl = document.getElementById('friendshipModal');
         let modalObj = bootstrap.Modal.getInstance(modalEl);
         if(modalObj) modalObj.hide();
-        
         document.getElementById('loadingArea').style.display = 'block';
         checkMemberStatus();
     };
@@ -335,10 +320,8 @@
         try {
             const res = await fetch(`${GAS_WEB_APP_URL}?action=getMemberData&lineUid=${currentLineUid}`);
             const text = await res.text();
-            
             let serverData;
-            try { serverData = JSON.parse(text); } 
-            catch(e) { throw new Error("API 網址可能未更新或權限設定錯誤。"); }
+            try { serverData = JSON.parse(text); } catch(e) { throw new Error("API 網址可能未更新或權限設定錯誤。"); }
 
             document.getElementById('loadingArea').style.display = 'none';
             
@@ -354,13 +337,11 @@
                 
                 if (serverData.isAdmin) {
                     document.getElementById('adminArea').style.display = 'block';
-                    if (serverData.isUnderMaintenance) {
-                        document.getElementById('adminMaintenanceAlert').style.display = 'block';
-                    }
+                    if (serverData.isUnderMaintenance) document.getElementById('adminMaintenanceAlert').style.display = 'block';
                 }
 
                 window.lastAdminSearchText = ""; 
-                window.currentServerData = serverData; // 🌟 存入全域讓 renderOrders 抓預購資料
+                window.currentServerData = serverData; // 存入全域供預購單使用
                 renderOrders(serverData.orders || [], serverData.promos || [], serverData.globalPages || {rules:{content:''}, instock:[]});
 
             } else { document.getElementById('bindArea').style.display = 'block'; }
@@ -381,34 +362,19 @@
           if(data.status === "SUCCESS") {
              document.getElementById('bindArea').style.display = 'none'; 
              document.getElementById('loadingArea').style.display = 'block';
-             let loadingText = document.querySelector('#loadingArea p');
-             if(loadingText) loadingText.innerText = "✅ 綁定成功！正在為您調閱專屬訂單...";
-             
-             setTimeout(() => {
-                 checkMemberStatus(); 
-             }, 1500);
-
+             document.querySelector('#loadingArea p').innerText = "✅ 綁定成功！正在為您調閱專屬訂單...";
+             setTimeout(() => { checkMemberStatus(); }, 1500);
           } else { 
-              alert("發生錯誤: " + data.message); 
-              btn.innerText="確認綁定"; 
-              btn.disabled=false; 
+              alert("發生錯誤: " + data.message); btn.innerText="確認綁定"; btn.disabled=false; 
           }
-      } catch(e) { 
-          alert("網路錯誤，請保持網路暢通並重試。"); 
-          btn.innerText="確認綁定"; 
-          btn.disabled=false; 
-      }
+      } catch(e) { alert("網路錯誤，請保持網路暢通並重試。"); btn.innerText="確認綁定"; btn.disabled=false; }
     }
 
     let fetchInterval;
     function startFetchAnimation(customText) {
         const texts = customText ? [customText, "跨海連線中...", "快好了，再等我一下下..."] : ["專屬資料載入中...", "努力為您撈取最新進度...", "連線進行中..."];
-        let i = 0;
-        document.getElementById('carouselText').innerText = texts[0];
-        fetchInterval = setInterval(() => {
-            i = (i + 1) % texts.length;
-            document.getElementById('carouselText').innerText = texts[i];
-        }, 1500);
+        let i = 0; document.getElementById('carouselText').innerText = texts[0];
+        fetchInterval = setInterval(() => { i = (i + 1) % texts.length; document.getElementById('carouselText').innerText = texts[i]; }, 1500);
     }
 
     async function executeAdminSearch() {
@@ -417,91 +383,71 @@
         if (!kw) return alert("請輸入查詢關鍵字！");
         
         const container = document.getElementById('ordersContainer');
-        container.innerHTML = `
-            <div class="loader-overlay">
-                <div class="spinner-border mb-3" role="status"></div>
-                <div id="carouselText" class="text-carousel">🔍 正在調閱客戶資料...</div>
-            </div>`;
-            
+        container.innerHTML = `<div class="loader-overlay"><div class="spinner-border mb-3" role="status"></div><div id="carouselText" class="text-carousel">🔍 正在調閱客戶資料...</div></div>`;
         startFetchAnimation("正在大海撈針尋找客人...");
             
         try {
-            const res = await fetch(GAS_WEB_APP_URL, {
-                method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ action: 'adminSearch', lineUid: currentLineUid, searchType: type, keyword: kw })
-            });
+            const res = await fetch(GAS_WEB_APP_URL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ action: 'adminSearch', lineUid: currentLineUid, searchType: type, keyword: kw }) });
             const data = await res.json();
             clearInterval(fetchInterval);
             
             if (data.status === "SUCCESS") {
                 window.lastAdminSearchText = `【${kw}】的訂單`;
-                window.currentServerData = data.data; // 🌟 存入全域供老闆預覽預購單
+                window.currentServerData = data.data; 
                 renderOrders(data.data.orders, data.data.promos, data.data.globalPages);
             } else {
                 container.innerHTML = `<div class="card card-custom text-center p-4"><h6 class="fw-bold text-danger mb-2">❌ 查詢失敗</h6><p class="small fw-bold mb-0" style="white-space: pre-wrap;">${data.message}</p></div>`;
             }
-        } catch(err) {
-            clearInterval(fetchInterval);
-            container.innerHTML = `<div class="alert alert-danger text-center">網路連線錯誤，請重試</div>`;
-        }
+        } catch(err) { clearInterval(fetchInterval); container.innerHTML = `<div class="alert alert-danger text-center">網路連線錯誤，請重試</div>`; }
     }
 
     async function promptEditLast5(orderId, currentLast5) {
         if (event) { event.stopPropagation(); }
         let newLast5 = prompt("請輸入您實際匯款帳號的『最後五碼』：", currentLast5 || "");
-        if (newLast5 === null) return; 
-        newLast5 = newLast5.trim();
+        if (newLast5 === null) return; newLast5 = newLast5.trim();
         if (newLast5.length !== 5 || isNaN(newLast5)) return alert("請輸入正確的 5 位數字！");
 
         const container = document.getElementById('ordersContainer');
-        container.innerHTML = `
-            <div class="loader-overlay">
-                <div class="progress-bar-custom"><div class="progress-bar-fill"></div></div>
-                <div class="text-carousel">📡 正在加密傳輸您的帳號資訊...</div>
-            </div>`;
+        container.innerHTML = `<div class="loader-overlay"><div class="progress-bar-custom"><div class="progress-bar-fill"></div></div><div class="text-carousel">📡 正在加密傳輸您的帳號資訊...</div></div>`;
 
         try {
-            const res = await fetch(GAS_WEB_APP_URL, {
-                method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ action: 'updateLast5', orderId: orderId, newLast5: newLast5, lineUid: currentLineUid })
-            });
+            const res = await fetch(GAS_WEB_APP_URL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ action: 'updateLast5', orderId: orderId, newLast5: newLast5, lineUid: currentLineUid }) });
             const data = await res.json();
-            if (data.status === "SUCCESS") { 
-                alert("✅ 帳號修改成功！"); 
-                checkMemberStatus(); 
-            } 
+            if (data.status === "SUCCESS") { alert("✅ 帳號修改成功！"); checkMemberStatus(); } 
             else { alert("修改失敗：" + data.message); checkMemberStatus(); }
         } catch(err) { alert("網路連線錯誤，請稍後再試。"); checkMemberStatus(); }
     }
 
     function toggleOrderCard(id) { let el = document.getElementById(id); if (el.classList.contains('show')) el.classList.remove('show'); else el.classList.add('show'); }
-    
     function toggleProgressCard(id) { 
         if (event) { event.stopPropagation(); }
-        let el = document.getElementById(id); 
-        let btn = document.getElementById(id + '-btn');
-        if (el.classList.contains('show')) {
-            el.classList.remove('show');
-            btn.innerHTML = '🚚 查看詳細貨況進度 <i class="bi bi-chevron-down"></i>';
-        } else { 
-            el.classList.add('show'); 
-            btn.innerHTML = '🚚 收起貨況進度 <i class="bi bi-chevron-up"></i>';
-        }
+        let el = document.getElementById(id); let btn = document.getElementById(id + '-btn');
+        if (el.classList.contains('show')) { el.classList.remove('show'); btn.innerHTML = '🚚 查看詳細貨況進度 <i class="bi bi-chevron-down"></i>'; } 
+        else { el.classList.add('show'); btn.innerHTML = '🚚 收起貨況進度 <i class="bi bi-chevron-up"></i>'; }
     }
 
-    // 🌟 預購互動按鈕邏輯
-    function selectPreorderAction(recordId, masterId, name, brand, series, shortQty, customerName, actionType) {
+    // 🌟 行內預購 2選1 互動邏輯
+    function selectPreorderAction(recordId, masterId, name, brand, series, shortQty, allocQty, originalReqQty, customerName, actionType) {
         pendingPreorderActions[recordId] = {
             masterId: masterId, name: name, brand: brand, series: series,
-            shortQty: shortQty, customerName: customerName, action: actionType
+            shortQty: shortQty, allocQty: allocQty, originalReqQty: originalReqQty,
+            customerName: customerName, action: actionType
         };
-        document.getElementById('action-box-' + recordId).style.display = 'none';
+        // 隱藏原本的行內按鈕
+        document.getElementById('action-btns-' + recordId).style.display = 'none';
+        
+        // 在該行旁邊印出已選擇的預覽字眼
+        let statusText = actionType === 'WAITLIST' ? '<span class="preorder-status status-wait">將轉候補</span>' : '<span class="preorder-status status-cancel">將取消</span>';
+        document.getElementById('action-preview-' + recordId).innerHTML = statusText;
+        
         renderPreorderPreview();
     }
 
     function removePreorderAction(recordId) {
         delete pendingPreorderActions[recordId];
-        document.getElementById('action-box-' + recordId).style.display = 'flex';
+        // 恢復原本的按鈕，清除預覽字眼
+        document.getElementById('action-btns-' + recordId).style.display = 'flex';
+        document.getElementById('action-preview-' + recordId).innerHTML = '';
         renderPreorderPreview();
     }
 
@@ -516,7 +462,7 @@
             let actionText = data.action === 'WAITLIST' ? '<span class="text-warning">⏳轉候補</span>' : '<span class="text-danger">❌取消</span>';
             list.innerHTML += `
                 <li class="d-flex justify-content-between align-items-center border-bottom border-light py-2">
-                    <span class="text-truncate" style="max-width: 70%;">${escHTML(data.name)}</span>
+                    <span class="text-truncate" style="max-width: 70%;">${escHTML(data.name)} <span class="text-muted">(缺${data.shortQty})</span></span>
                     <div class="d-flex align-items-center">
                         <strong class="me-2">${actionText}</strong>
                         <button class="btn btn-sm btn-light border p-0 px-2 rounded-circle" onclick="removePreorderAction('${id}')">❌</button>
@@ -527,6 +473,14 @@
         document.getElementById('preview-count').innerText = count;
         bar.style.display = count > 0 ? 'block' : 'none';
         document.body.style.paddingBottom = count > 0 ? '200px' : '50px';
+    }
+
+    // 格式化後台備註，轉換為像對話框一樣的軌跡
+    function formatHistoryNoteForHTML(rawNote) { 
+        if (!rawNote) return ''; 
+        let escaped = escHTML(rawNote); 
+        // 讓 [03/25 ⏳客人自行操作] 變色突出顯示
+        return escaped.replace(/\[(.*?)\]/g, '<span class="fw-bold text-theme-primary">[$1]</span>').replace(/\n/g, '<br>'); 
     }
 
     async function submitPreorderBatch() {
@@ -544,12 +498,12 @@
             const data = await res.json();
             
             if (data.status === "SUCCESS") {
-                pendingPreorderActions = {}; // 清空購物車
+                pendingPreorderActions = {}; 
                 renderPreorderPreview();
                 document.getElementById('loadingArea').style.display = 'block';
                 document.getElementById('homeArea').style.display = 'none';
                 document.querySelector('#loadingArea p').innerText = "✅ 處理成功！正在為您更新訂單畫面...";
-                checkMemberStatus(); // 重新整理畫面
+                checkMemberStatus(); // 重新整理畫面，原本的區塊就會原地變成備註了
             } else {
                 alert("處理失敗：" + data.message);
                 btn.innerHTML = "確認送出修改"; btn.disabled = false;
@@ -567,9 +521,7 @@
         if (promos && promos.length > 0) {
             let pCards = promos.map(p => `
                 <div style="background:#fffaf5; border:1px solid #e8d5c4; border-radius:12px; padding:16px; margin-bottom:12px; text-align:left; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
-                    <div style="margin-bottom: 12px;">
-                        <h6 style="font-weight:900; color:var(--brand-charcoal); line-height: 1.4; margin-bottom:0;">👑 ${escHTML(p.title)}</h6>
-                    </div>
+                    <div style="margin-bottom: 12px;"><h6 style="font-weight:900; color:var(--brand-charcoal); line-height: 1.4; margin-bottom:0;">👑 ${escHTML(p.title)}</h6></div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div style="font-size:14.5px; color:#dc3545; font-weight:900;">${p.exp ? `⏰ 結單: ${escHTML(p.exp)}` : ''}</div>
                         <button class="shadow-sm" style="background-color:var(--brand-brown); color:#fff; border:none; padding:8px 20px; font-size:14px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="window.open('${p.url}', '_blank')">👉 前往填單</button>
@@ -583,54 +535,104 @@
 
         let ordersHtml = '';
         let titleHtmlStr = `<h6 class="fw-bold mb-3 ms-1" style="color: var(--brand-charcoal);"><i class="bi bi-box-seam me-2"></i>您的正式訂單紀錄</h6>`;
-        if (window.lastAdminSearchText) {
-            titleHtmlStr = `<h6 class="fw-bold mb-3 ms-1" style="color: #a95a52;"><i class="bi bi-person-lines-fill me-2"></i>客戶：${window.lastAdminSearchText}</h6>`;
-        }
+        if (window.lastAdminSearchText) titleHtmlStr = `<h6 class="fw-bold mb-3 ms-1" style="color: #a95a52;"><i class="bi bi-person-lines-fill me-2"></i>客戶：${window.lastAdminSearchText}</h6>`;
         
-        // 🌟 預購卡片渲染邏輯
+        // 🌟 無壓迫感・行內按鈕版 預購卡片
         let preorderOrdersHtml = '';
         if (window.currentServerData && window.currentServerData.preorders && window.currentServerData.preorders.length > 0) {
             let preCards = window.currentServerData.preorders.map((po, idx) => {
+                let collapseId = `preorder-collapse-${idx}`; 
+                
+                let hasShortage = false; // 用來判斷是否要顯示上方黃色警告
+
                 let itemsHtml = po.items.map(i => {
                     let safeName = escHTML(i.productName);
+                    let origQty = i.reqQty; // 在未買足拆分前，這才是客人真正的許願數
                     
-                    if (i.reqQty === -1) return `<div class="item-row is-missing"><span class="item-name text-muted">❌ ${safeName}</span><span class="preorder-status badge bg-secondary">已取消</span></div>`;
-                    if (i.reqQty === -2) return `<div class="item-row"><span class="item-name text-secondary">⏳ ${safeName}</span><span class="preorder-status status-waitlist">已轉候補</span></div>`;
+                    // 情境1：已取消
+                    if (i.reqQty === -1) return `<div class="item-row is-missing"><div class="item-name text-muted">❌ ${safeName}</div><span class="preorder-status status-cancel">已取消</span></div>`;
+                    
+                    // 情境2：已轉候補
+                    if (i.reqQty === -2) return `<div class="item-row"><div class="item-name text-secondary">⏳ ${safeName}</div><span class="preorder-status status-wait">已轉候補</span></div>`;
                     
                     let shortQty = i.reqQty - i.allocQty;
-                    if (shortQty <= 0 && i.allocQty > 0) return `<div class="item-row"><span class="item-name text-success">✅ ${safeName} <span class="item-qty">x${i.allocQty}</span></span><span class="preorder-status status-get">已買到</span></div>`;
                     
+                    // 情境3：買齊了
+                    if (shortQty <= 0 && i.allocQty > 0) return `<div class="item-row"><div class="item-name text-success">✅ ${safeName} <span class="item-qty">x${i.allocQty}</span></div><span class="preorder-status status-get">已買到</span></div>`;
+                    
+                    // 情境4：缺貨 (可能是全缺，也可能是未買足缺一部分)
                     if (shortQty > 0) {
-                        let missText = i.allocQty > 0 ? `<span class="text-danger small ms-2">(缺${shortQty}件)</span>` : '';
-                        let boughtText = i.allocQty > 0 ? `<div class="item-row mb-1"><span class="item-name text-success">✅ ${safeName} <span class="item-qty">x${i.allocQty}</span></span><span class="preorder-status status-get">已買到</span></div>` : '';
+                        hasShortage = true;
+                        let rowHtml = '';
                         
-                        return `
-                        ${boughtText}
-                        <div class="p-2 mb-2 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded" style="font-size: 14px;">
-                            <div class="fw-bold text-danger mb-2">❌ ${safeName} ${missText}</div>
-                            <div class="d-flex gap-2" id="action-box-${i.recordId}">
-                                <button class="btn btn-sm btn-outline-danger fw-bold flex-fill bg-white" onclick="selectPreorderAction('${i.recordId}', '${po.masterId}', '${escapeQuotes(i.productName)}', '${escapeQuotes(i.brand)}', '${escapeQuotes(i.series)}', ${shortQty}, '${escapeQuotes(po.customerName)}', 'CANCEL')">取消購買</button>
-                                <button class="btn btn-sm btn-warning fw-bold flex-fill text-dark" onclick="selectPreorderAction('${i.recordId}', '${po.masterId}', '${escapeQuotes(i.productName)}', '${escapeQuotes(i.brand)}', '${escapeQuotes(i.series)}', ${shortQty}, '${escapeQuotes(po.customerName)}', 'WAITLIST')">轉候補池</button>
+                        // 如果有買到一部分，先印出買到的那一行
+                        if (i.allocQty > 0) {
+                            rowHtml += `<div class="item-row"><div class="item-name text-success">✅ ${safeName} <span class="item-qty">x${i.allocQty}</span></div><span class="preorder-status status-get">已買到</span></div>`;
+                        }
+                        
+                        let missSymbol = i.allocQty > 0 ? '⚠️' : '❌';
+                        let missLabel = i.allocQty > 0 ? '未買足' : '未買到';
+                        let missText = i.allocQty > 0 ? `<span class="text-danger small ms-1">(缺${shortQty}件)</span>` : `<span class="item-qty ms-1">x${shortQty}</span>`;
+                        
+                        // 缺貨行與右側行內按鈕
+                        rowHtml += `
+                        <div class="item-row bg-danger bg-opacity-10 px-2 rounded mt-1" style="border: 1px dashed #dc3545;">
+                            <div class="item-name text-danger">${missSymbol} ${safeName} ${missText}</div>
+                            <div class="d-flex align-items-center">
+                                <div id="action-preview-${i.recordId}"></div>
+                                <div class="d-flex" id="action-btns-${i.recordId}">
+                                    <button class="btn btn-inline-action btn-inline-cancel shadow-sm" onclick="selectPreorderAction('${i.recordId}', '${po.masterId}', '${escapeQuotes(i.productName)}', '${escapeQuotes(i.brand)}', '${escapeQuotes(i.series)}', ${shortQty}, ${i.allocQty}, ${origQty}, '${escapeQuotes(po.customerName)}', 'CANCEL')">取消購買</button>
+                                    <button class="btn btn-inline-action btn-inline-waitlist shadow-sm" onclick="selectPreorderAction('${i.recordId}', '${po.masterId}', '${escapeQuotes(i.productName)}', '${escapeQuotes(i.brand)}', '${escapeQuotes(i.series)}', ${shortQty}, ${i.allocQty}, ${origQty}, '${escapeQuotes(po.customerName)}', 'WAITLIST')">轉許願候補</button>
+                                </div>
                             </div>
                         </div>`;
+                        return rowHtml;
                     }
                     return '';
                 }).join('');
 
+                // 吃客查設定表的公告與匯款資訊 (跟正式單一樣)
+                let noticeHtml = po.groupNotice || po.groupMemo ? `<div class="notice-box">📢 公告：<br>${escHTML(po.groupNotice)}<br>${escHTML(po.groupMemo)}</div>` : '';
+                let bankHtml = '';
+                if (po.groupBankInfo) {
+                    let deadlineHtml = po.groupDeadline ? `<span class="bank-deadline">匯款期限：${escHTML(po.groupDeadline)}</span>` : '';
+                    bankHtml = `
+                    <div class="bank-info shadow-sm mt-3">
+                        <div class="bank-title"><span class="bank-title-text"><i class="bi bi-credit-card-2-front-fill me-1"></i> 專屬匯款資訊</span>${deadlineHtml}</div>
+                        <div class="bank-text">${escHTML(po.groupBankInfo)}</div>
+                        <div class="bank-warning">(請不要寫備註訊息，會對不到後五碼~)</div>
+                    </div>`;
+                }
+
+                // 最底部的歷史軌跡備註
+                let historyNoteHtml = po.note ? `
+                    <div class="mt-3 p-3 bg-light rounded border border-secondary border-opacity-25" style="font-size: 13px; line-height: 1.6; color: #555;">
+                        <div class="fw-bold mb-1 text-secondary"><i class="bi bi-clock-history me-1"></i> 處理軌跡紀錄：</div>
+                        ${formatHistoryNoteForHTML(po.note)}
+                    </div>` : '';
+
+                let shortageWarning = hasShortage ? `
+                    <div class="p-2 mb-3 bg-warning bg-opacity-10 border border-warning rounded text-dark fw-bold" style="font-size: 13.5px;">
+                        <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i> 您的預購單中有缺貨品項，請針對下方商品進行 2選1 處理，確認後才可進入匯款對帳階段哦！
+                    </div>` : '';
+
                 return `
-                <div class="card-order preorder-card mb-4">
-                    <div class="order-header" style="cursor: default;">
+                <div class="card-order mb-4" style="border: 2px solid #a95a52; box-shadow: 0 4px 16px rgba(169, 90, 82, 0.08);">
+                    <div class="order-header" onclick="toggleOrderCard('${collapseId}')" style="background-color: #fdf3f2;">
                         <div class="order-title-container">
-                            <span class="order-title-brand"><i class="bi bi-bag-plus-fill me-1"></i> 預購處理中</span>
+                            <span class="order-title-brand">${escHTML(po.displayBrand)}</span>
                             <span class="order-title-series">單號: ${escHTML(po.orderNo)}</span>
                         </div>
                         <div class="badge-status status-waitlist shadow-sm">對帳前清單</div>
                     </div>
-                    <div class="order-content show p-3">
-                        <div class="notice-box bg-white border-danger text-danger mb-3 shadow-sm">
-                            <i class="bi bi-exclamation-triangle-fill me-1"></i> 您的預購單中有缺貨品項，請針對下方商品進行 2選1 處理，確認後才可進入匯款對帳階段哦！
+                    <div id="${collapseId}" class="order-content show p-3">
+                        ${noticeHtml}
+                        ${shortageWarning}
+                        <div class="details-box bg-white border-0 shadow-sm p-3 mb-0">
+                            ${itemsHtml}
                         </div>
-                        ${itemsHtml}
+                        ${bankHtml}
+                        ${historyNoteHtml}
                     </div>
                 </div>`;
             }).join('');
@@ -638,9 +640,7 @@
             preorderOrdersHtml = `<div class="text-start mb-4"><h6 class="fw-bold mb-3 ms-1 text-danger"><i class="bi bi-exclamation-circle-fill me-2"></i>待處理預購單</h6>${preCards}</div>`;
         }
 
-        let waitlistHtml = '';
         let officialOrdersHtml = '';
-        
         if (!orders || orders.length === 0) { 
             officialOrdersHtml = `<div class="p-5 rounded border border-2 border-theme-secondary border-dashed bg-white shadow-sm text-center"><h6 class="fw-bold m-0" style="color: #888;">📦 您目前沒有進行中的正式訂單</h6></div>`; 
         } else {
@@ -664,37 +664,20 @@
                 }
 
                 let noticeHtml = '';
-                if (order.groupNotice || order.groupMemo) {
-                    noticeHtml = `<div class="notice-box">📢 公告：<br>${escHTML(order.groupNotice)}<br>${escHTML(order.groupMemo)}</div>`;
-                }
+                if (order.groupNotice || order.groupMemo) noticeHtml = `<div class="notice-box">📢 公告：<br>${escHTML(order.groupNotice)}<br>${escHTML(order.groupMemo)}</div>`;
 
-                let progressHtml = '';
-                let progressContentHtml = '';
-                
+                let progressHtml = ''; let progressContentHtml = '';
                 if (order.progress) {
                     let p = order.progress;
-                    let hasB1 = p.b1 && (p.b1.purchased > 0 || p.b1.totalPurchased > 0);
-                    let hasB2 = p.b2 && (p.b2.purchased > 0 || p.b2.totalPurchased > 0);
-
-                    let titleB1 = (hasB1 && hasB2) ? "📦 [非預購款] 貨況" : "📦 貨況進度";
-                    let titleB2 = (hasB1 && hasB2) ? "🚚 [預購款] 貨況" : "🚚 貨況進度";
+                    let hasB1 = p.b1 && (p.b1.purchased > 0 || p.b1.totalPurchased > 0); let hasB2 = p.b2 && (p.b2.purchased > 0 || p.b2.totalPurchased > 0);
+                    let titleB1 = (hasB1 && hasB2) ? "📦 [非預購款] 貨況" : "📦 貨況進度"; let titleB2 = (hasB1 && hasB2) ? "🚚 [預購款] 貨況" : "🚚 貨況進度";
                     
                     if (hasB1) {
                         let t = p.b1.purchased || p.b1.totalPurchased;
-                        let rawStep1 = p.b1.step1 !== undefined ? p.b1.step1 : (p.b1.shipped || 0);
-                        let rawStep2 = p.b1.step2 || 0;
-                        let rawStep3 = p.b1.step3 || 0;
-                        let rawStep4 = p.b1.step4 !== undefined ? p.b1.step4 : (p.b1.twArrived || 0);
-                        
-                        let pctStep1 = Math.round((rawStep1 / t) * 100) || 0;
-                        let pctStep2 = Math.max(0, Math.round(((rawStep2 - rawStep3) / t) * 100)) || 0;
-                        let pctStep3 = Math.max(0, Math.round(((rawStep3 - rawStep4) / t) * 100)) || 0;
-                        let pctStep4 = Math.round((rawStep4 / t) * 100) || 0;
-                        
+                        let rawStep1 = p.b1.step1 !== undefined ? p.b1.step1 : (p.b1.shipped || 0); let rawStep2 = p.b1.step2 || 0; let rawStep3 = p.b1.step3 || 0; let rawStep4 = p.b1.step4 !== undefined ? p.b1.step4 : (p.b1.twArrived || 0);
+                        let pctStep1 = Math.round((rawStep1 / t) * 100) || 0; let pctStep2 = Math.max(0, Math.round(((rawStep2 - rawStep3) / t) * 100)) || 0; let pctStep3 = Math.max(0, Math.round(((rawStep3 - rawStep4) / t) * 100)) || 0; let pctStep4 = Math.round((rawStep4 / t) * 100) || 0;
                         let act1 = rawStep1 > 0 ? 'active' : ''; let act2 = rawStep2 > 0 ? 'active' : ''; let act3 = rawStep3 > 0 ? 'active' : ''; let act4 = rawStep4 > 0 ? 'active' : '';
-                        
                         let notShippedMsg = (rawStep1 === 0) ? `<div style="margin-top: 20px; padding: 12px; background-color: #FFF3CD; color: #856404; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; border: 1px dashed #ffe8a1;">⏳ 官方尚未出貨</div>` : '';
-
                         progressContentHtml += `
                         <div class="progress-wrapper mb-3">
                             <div class="progress-title"><span>${titleB1}</span></div>
@@ -704,27 +687,15 @@
                                 <div class="tracker-step"><div class="step-dot ${act2}"></div><div class="step-label ${act2?'':'muted'}">泰國到貨</div><div class="step-pct ${act2?'':'muted'}">${pctStep2}%</div></div>
                                 <div class="tracker-step"><div class="step-dot ${act3}"></div><div class="step-label ${act3?'':'muted'}">海關查驗</div><div class="step-pct ${act3?'':'muted'}">${pctStep3}%</div></div>
                                 <div class="tracker-step"><div class="step-dot final ${act4}"></div><div class="step-label final ${act4?'':'muted'}">台灣到貨</div><div class="step-pct final ${act4?'':'muted'}">${pctStep4}%</div></div>
-                            </div>
-                            ${notShippedMsg}
+                            </div>${notShippedMsg}
                         </div>`;
                     }
-                    
                     if (hasB2) {
                         let t = p.b2.purchased || p.b2.totalPurchased;
-                        let rawStep1 = p.b2.step1 !== undefined ? p.b2.step1 : (p.b2.shipped || 0);
-                        let rawStep2 = p.b2.step2 !== undefined ? p.b2.step2 : (p.b2.flight || 0);
-                        let rawStep3 = p.b2.step3 !== undefined ? p.b2.step3 : (p.b2.flight || 0);
-                        let rawStep4 = p.b2.step4 !== undefined ? p.b2.step4 : (p.b2.twArrived || 0);
-
-                        let pctStep1 = Math.round((rawStep1 / t) * 100) || 0;
-                        let pctStep2 = Math.max(0, Math.round(((rawStep2 - rawStep3) / t) * 100)) || 0;
-                        let pctStep3 = Math.max(0, Math.round(((rawStep3 - rawStep4) / t) * 100)) || 0;
-                        let pctStep4 = Math.round((rawStep4 / t) * 100) || 0;
-
+                        let rawStep1 = p.b2.step1 !== undefined ? p.b2.step1 : (p.b2.shipped || 0); let rawStep2 = p.b2.step2 !== undefined ? p.b2.step2 : (p.b2.flight || 0); let rawStep3 = p.b2.step3 !== undefined ? p.b2.step3 : (p.b2.flight || 0); let rawStep4 = p.b2.step4 !== undefined ? p.b2.step4 : (p.b2.twArrived || 0);
+                        let pctStep1 = Math.round((rawStep1 / t) * 100) || 0; let pctStep2 = Math.max(0, Math.round(((rawStep2 - rawStep3) / t) * 100)) || 0; let pctStep3 = Math.max(0, Math.round(((rawStep3 - rawStep4) / t) * 100)) || 0; let pctStep4 = Math.round((rawStep4 / t) * 100) || 0;
                         let act1 = rawStep1 > 0 ? 'active' : ''; let act2 = rawStep2 > 0 ? 'active' : ''; let act3 = rawStep3 > 0 ? 'active' : ''; let act4 = rawStep4 > 0 ? 'active' : '';
-                        
                         let notShippedMsg = (rawStep1 === 0) ? `<div style="margin-top: 20px; padding: 12px; background-color: #FFF3CD; color: #856404; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; border: 1px dashed #ffe8a1;">⏳ 官方尚未出貨</div>` : '';
-
                         progressContentHtml += `
                         <div class="progress-wrapper mb-3">
                             <div class="progress-title"><span>${titleB2}</span></div>
@@ -734,62 +705,25 @@
                                 <div class="tracker-step"><div class="step-dot ${act2}"></div><div class="step-label ${act2?'':'muted'}">泰國到貨</div><div class="step-pct ${act2?'':'muted'}">${pctStep2}%</div></div>
                                 <div class="tracker-step"><div class="step-dot ${act3}"></div><div class="step-label ${act3?'':'muted'}">海關查驗</div><div class="step-pct ${act3?'':'muted'}">${pctStep3}%</div></div>
                                 <div class="tracker-step"><div class="step-dot final ${act4}"></div><div class="step-label final ${act4?'':'muted'}">台灣到貨</div><div class="step-pct final ${act4?'':'muted'}">${pctStep4}%</div></div>
-                            </div>
-                            ${notShippedMsg}
+                            </div>${notShippedMsg}
                         </div>`;
                     }
-
-                    if (progressContentHtml !== '') {
-                        progressHtml = `
-                        <div id="${progressCollapseId}-btn" class="progress-toggle-btn" onclick="toggleProgressCard('${progressCollapseId}')">
-                            🚚 查看詳細貨況進度 <i class="bi bi-chevron-down"></i>
-                        </div>
-                        <div id="${progressCollapseId}" class="progress-content">
-                            ${progressContentHtml}
-                        </div>`;
-                    }
+                    if (progressContentHtml !== '') progressHtml = `<div id="${progressCollapseId}-btn" class="progress-toggle-btn" onclick="toggleProgressCard('${progressCollapseId}')">🚚 查看詳細貨況進度 <i class="bi bi-chevron-down"></i></div><div id="${progressCollapseId}" class="progress-content">${progressContentHtml}</div>`;
                 }
 
-                let itemsHtml = order.items.map(i => `
-                    <div class="item-row">
-                        <div><span class="item-name">${escHTML(i.name)}</span><span class="item-qty">x${i.qty}</span></div>
-                        <div class="fw-bold">$${i.amount}</div>
-                    </div>
-                `).join('');
-
+                let itemsHtml = order.items.map(i => `<div class="item-row"><div><span class="item-name">${escHTML(i.name)}</span><span class="item-qty">x${i.qty}</span></div><div class="fw-bold">$${i.amount}</div></div>`).join('');
                 let editBtn = !isPaid ? `<span class="edit-btn" onclick="promptEditLast5('${order.key}', '${order.last5}')"><i class="bi bi-pencil-square"></i> 修改</span>` : '';
                 let last5ValueHtml = order.last5 ? `<span class="last5-value">${escHTML(order.last5)} ${editBtn}</span>` : `<span class="text-muted fst-italic fw-normal" style="font-size:13px;">尚未提供 ${editBtn}</span>`;
                 let last5Html = `<div class="last5-row"><div style="color:#666;">匯款後五碼</div>${last5ValueHtml}</div>`;
-
-                let detailsBoxHtml = `
-                <div class="details-box shadow-sm mb-3">
-                    ${itemsHtml}
-                    <div class="summary-divider"></div>
-                    <div class="summary-row"><span>商品小計</span><span>$${order.itemsTotal}</span></div>
-                    <div class="summary-row mb-3"><span>賣貨便金額</span><span>${shipDisplay}</span></div>
-                    ${last5Html}
-                    <div class="total-row"><span>應匯款金額</span><span class="total-price">$${order.due}</span></div>
-                </div>`;
+                let detailsBoxHtml = `<div class="details-box shadow-sm mb-3">${itemsHtml}<div class="summary-divider"></div><div class="summary-row"><span>商品小計</span><span>$${order.itemsTotal}</span></div><div class="summary-row mb-3"><span>賣貨便金額</span><span>${shipDisplay}</span></div>${last5Html}<div class="total-row"><span>應匯款金額</span><span class="total-price">$${order.due}</span></div></div>`;
 
                 let bankHtml = '';
                 if (isPaid) {
                     let noteHtml = order.personalNote ? `<div class="done-note"><i class="bi bi-info-circle me-1"></i> 備註：${escHTML(order.personalNote)}</div>` : '';
-                    bankHtml = `
-                    <div class="bank-info text-center shadow-sm">
-                        <div class="fw-bold fs-5" style="color: #436b46;"><i class="bi bi-check-circle-fill me-2"></i>此訂單已完成匯款對帳</div>
-                        ${noteHtml}
-                    </div>`;
+                    bankHtml = `<div class="bank-info text-center shadow-sm"><div class="fw-bold fs-5" style="color: #436b46;"><i class="bi bi-check-circle-fill me-2"></i>此訂單已完成匯款對帳</div>${noteHtml}</div>`;
                 } else if (order.groupBankInfo) {
                     let deadlineHtml = order.groupDeadline ? `<span class="bank-deadline">匯款期限：${escHTML(order.groupDeadline)}</span>` : '';
-                    bankHtml = `
-                    <div class="bank-info shadow-sm">
-                        <div class="bank-title">
-                            <span class="bank-title-text"><i class="bi bi-credit-card-2-front-fill me-1"></i> 專屬匯款資訊</span>
-                            ${deadlineHtml}
-                        </div>
-                        <div class="bank-text">${escHTML(order.groupBankInfo)}</div>
-                        <div class="bank-warning">(請不要寫備註訊息，會對不到後五碼~)</div>
-                    </div>`;
+                    bankHtml = `<div class="bank-info shadow-sm"><div class="bank-title"><span class="bank-title-text"><i class="bi bi-credit-card-2-front-fill me-1"></i> 專屬匯款資訊</span>${deadlineHtml}</div><div class="bank-text">${escHTML(order.groupBankInfo)}</div><div class="bank-warning">(請不要寫備註訊息，會對不到後五碼~)</div></div>`;
                 }
 
                 return `
@@ -806,11 +740,10 @@
                     </div>
                 </div>`;
             }).join('');
-            
         }
         
-        // 🌟 將預購卡片印在最上方
-        ordersHtml = `<div class="text-start">${preorderOrdersHtml}${titleHtmlStr}${waitlistHtml}${officialOrdersHtml}</div>`;
+        // 組合最終的訂單畫面 (預購單在上，正式單在下)
+        ordersHtml = `<div class="text-start">${preorderOrdersHtml}${titleHtmlStr}${officialOrdersHtml}</div>`;
 
         let instockArr = globalPages.instock;
         let instockHtml = '';
@@ -830,12 +763,7 @@
         }
 
         let rulesData = globalPages.rules;
-        let rulesHtml = `
-            <div class="card-order p-4 text-start shadow-sm mt-0">
-                <h6 class="fw-bold mb-3" style="color: var(--brand-charcoal);"><i class="bi bi-book me-2"></i>Wander Ease 代購與服務規則</h6>
-                <div class="text-muted small" style="line-height: 1.8; white-space: pre-wrap;">${escHTML(rulesData.content || '尚無公告規則。')}</div>
-            </div>
-        `;
+        let rulesHtml = `<div class="card-order p-4 text-start shadow-sm mt-0"><h6 class="fw-bold mb-3" style="color: var(--brand-charcoal);"><i class="bi bi-book me-2"></i>Wander Ease 代購與服務規則</h6><div class="text-muted small" style="line-height: 1.8; white-space: pre-wrap;">${escHTML(rulesData.content || '尚無公告規則。')}</div></div>`;
 
         let finalHtml = `
             <div class="sim-nav-pills" id="innerSimTabs" role="tablist">
